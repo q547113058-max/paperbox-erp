@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from './auth/auth.module';
+import { ProductsModule } from './products/products.module';
 import { Account } from './entities/accounts';
 import { ActionLog } from './entities/action_logs';
 import { ColorPrint } from './entities/color_prints';
@@ -59,6 +61,8 @@ import { WorkshopInventoryLog } from './entities/workshop_inventory_logs';
       synchronize: false,
       logging: false,
     }),
+    AuthModule,
+    ProductsModule,
   ],
 })
 export class AppModule {}
