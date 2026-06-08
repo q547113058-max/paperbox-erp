@@ -1,11 +1,11 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ColorPrintsService } from './color_prints.service';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 
 @Controller('color_prints')
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ColorPrintsController {
   constructor(private readonly service: ColorPrintsService) {}
 

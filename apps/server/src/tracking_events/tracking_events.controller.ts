@@ -1,11 +1,11 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TrackingEventService } from './tracking_events.service';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 
 @Controller('tracking_events')
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class TrackingEventController {
   constructor(private readonly service: TrackingEventService) {}
   @Get() findAll() { return this.service.findAll(); }

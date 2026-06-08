@@ -1,11 +1,11 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OutsourcingOrderService } from './outsourcing_orders.service';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 
 @Controller('outsourcing_orders')
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class OutsourcingOrderController {
   constructor(private readonly service: OutsourcingOrderService) {}
   @Get() findAll() { return this.service.findAll(); }

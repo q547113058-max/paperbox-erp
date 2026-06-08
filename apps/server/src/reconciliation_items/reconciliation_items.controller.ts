@@ -1,11 +1,11 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ReconciliationItemService } from './reconciliation_items.service';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 
 @Controller('reconciliation_items')
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ReconciliationItemController {
   constructor(private readonly service: ReconciliationItemService) {}
   @Get() findAll() { return this.service.findAll(); }
