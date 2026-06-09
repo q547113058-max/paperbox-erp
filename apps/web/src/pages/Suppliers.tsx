@@ -3,7 +3,7 @@ import { Table, Input, Button, Space, Tag, Popconfirm, message, Modal, Form, Inp
 import type { Supplier } from '../types/api';
 import api from '../utils/axios';
 
-const STATUS_OPTIONS = ['合作中', '暂停', '终止'];
+// STATUS_OPTIONS removed - unused
 const PAYMENT_CYCLE_OPTIONS = ['月结', '现结', '季结', '预付'];
 const SUPPLIER_TYPE_OPTIONS = ['原材料', '辅料', '加工', '设备', '其他'];
 

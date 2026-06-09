@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Statistic, Table, Tag, Space } from 'antd';
+import { Card, Row, Col, Statistic, Table, Tag } from 'antd';
 import type { Order, Product } from '../types/api';
 import api from '../utils/axios';
 

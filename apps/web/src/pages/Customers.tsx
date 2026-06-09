@@ -49,7 +49,7 @@ export default function Customers() {
     { title: '地址', dataIndex: 'address', key: 'address', ellipsis: true },
     { title: '业务员', dataIndex: 'salesman', key: 'salesman', width: 90 },
     { title: '账期', dataIndex: 'payment_cycle', key: 'payment_cycle', width: 80 },
-    { title: '回款率', dataIndex: 'rebate_percent', key: 'rebate_percent', width: 80, render: (v: number) => v ? `${v}%` : '-' },
+    { title: '回款率', dataIndex: 'rebate_percent', key: 'rebate_percent', width: 80, render: (v: number | null) => v ? `${v}%` : '-' },
     { title: '状态', dataIndex: 'status', key: 'status', width: 80, render: (v: string) => <Tag color={v === '活跃' ? 'green' : 'default'}>{v}</Tag> },
     {
       title: '操作', key: 'action', width: 120,

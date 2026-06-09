@@ -56,7 +56,7 @@ export default function Orders() {
   const columns = [
     { title: '订单号', dataIndex: 'order_no', key: 'order_no', width: 130, render: (v: string) => v || '-' },
     { title: '客户', dataIndex: 'customer_id', key: 'customer', width: 120, render: (id: number) => customerMap[id] || `ID:${id}` },
-    { title: '状态', dataIndex: 'status', key: 'status', width: 90, render: (s: string) => <Tag color={STATUS_COLOR[s] || 'default'}>{s}</Tag> },
+    { title: '状态', dataIndex: 'status', key: 'status', width: 90, render: (s: string) => <Tag color={STATUS_COLOR[s as keyof typeof STATUS_COLOR] || 'default'}>{s}</Tag> },
     { title: '总金额', dataIndex: 'total_amount', key: 'total_amount', width: 110, render: (v: number) => `¥${Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}` },
     { title: '成本', dataIndex: 'total_cost', key: 'total_cost', width: 100, render: (v: number) => `¥${Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}` },
     { title: '利润', dataIndex: 'profit', key: 'profit', width: 100, render: (v: number) => `¥${Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}` },

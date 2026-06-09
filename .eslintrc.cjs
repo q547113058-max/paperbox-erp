@@ -16,7 +16,7 @@ module.exports = {
     browser: true,
   },
   rules: {
-    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/no-explicit-any': 'off',  // 允许 any（TypeORM/NestJS 需要）
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     'no-console': 'off',
     'no-empty': 'off',
