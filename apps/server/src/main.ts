@@ -28,7 +28,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.PORT || 3003;
+  const port = process.env.PORT || 3005;
   await app.listen(port);
   console.log(`[Paperbox ERP] Server running on http://localhost:${port}`);
   console.log(`[Paperbox ERP] Swagger docs: http://localhost:${port}/api/docs`);

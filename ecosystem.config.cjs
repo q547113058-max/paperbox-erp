@@ -35,7 +35,7 @@ module.exports = {
       wait_ready: false,
       env: {
         NODE_ENV: 'production',
-        PORT: 3003,
+        PORT: 3333,
         JWT_SECRET: process.env.JWT_SECRET || 'paperbox-erp-v2-jwt-secret-change-in-production',
       },
       error_file: path.join(ROOT, 'logs/server-error.log'),

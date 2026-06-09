@@ -25,7 +25,7 @@
 
 | 服务 | 端口 | 进程 |
 |------|------|------|
-| NestJS 后端 | **3003** | `node -r ts-node/register src/main.ts` |
+| NestJS 后端 | **3005** | `node -r ts-node/register src/main.ts` |
 | Vite 前端 dev | **5174** | `npx vite` |
 | 旧纸箱 Express | ~~3001~~ | PM2 `paperbox-erp`（不冲突，但不要误杀） |
 | 鸡爪 ERP | 3001 / 5173 | 独立项目（不混淆） |
