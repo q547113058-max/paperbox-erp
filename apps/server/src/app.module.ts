@@ -37,6 +37,7 @@ import { TrackingEventModule } from './tracking_events/tracking_events.module';
 import { WorkOrderMaterialModule } from './work_order_materials/work_order_materials.module';
 import { WorkshopInventoryModule } from './workshop_inventory/workshop_inventory.module';
 import { WorkshopInventoryLogModule } from './workshop_inventory_logs/workshop_inventory_logs.module';
+import { UploadsModule } from './uploads/uploads.module';
 import { Account } from './entities/accounts';
 import { ActionLog } from './entities/action_logs';
 import { ColorPrint } from './entities/color_prints';
@@ -133,6 +134,7 @@ const DB_PATH = '/data/erp-data/erp-system/erp.db';
     WorkOrderMaterialModule,
     WorkshopInventoryModule,
     WorkshopInventoryLogModule,
+    UploadsModule,
   ],
 })
 export class AppModule implements OnModuleInit, OnModuleDestroy {

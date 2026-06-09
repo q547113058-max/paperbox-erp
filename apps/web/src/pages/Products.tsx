@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Input, Button, Space, Tag, Popconfirm, message, Modal, Form, InputNumber, Select } from 'antd';
+import { Table, Input, Button, Space, Tag, Popconfirm, message, Modal, Form, InputNumber, Select, Image } from 'antd';
 import type { Product } from '../types/api';
 import api from '../utils/axios';
+import { ImageUpload } from '../components/ImageUpload';
 
 const UNIT_OPTIONS = ['个', '套', '箱', '平方米', '米'];
 const STATUS_OPTIONS = ['正常生产', '已停产', '开发中', '打样'];
@@ -50,6 +51,13 @@ export default function Products() {
   };
 
   const columns = [
+    { 
+      title: '图片', 
+      dataIndex: 'finished_product_image', 
+      key: 'image', 
+      width: 80,
+      render: (v: string) => v ? <Image src={v} width={50} height={50} style={{ objectFit: 'cover' }} /> : '-'
+    },
     { title: '产品编号', dataIndex: 'code', key: 'code', width: 120 },
     { title: '名称', dataIndex: 'name', key: 'name', render: (v: string) => v || '-' },
     { title: '规格', dataIndex: 'spec', key: 'spec', width: 80 },
@@ -115,6 +123,9 @@ export default function Products() {
           </Space>
           <Form.Item name="status" label="状态" initialValue="正常生产">
             <Select options={STATUS_OPTIONS.map((s) => ({ value: s, label: s }))} style={{ width: 160 }} />
+          </Form.Item>
+          <Form.Item name="finished_product_image" label="产品图片">
+            <ImageUpload />
           </Form.Item>
         </Form>
       </Modal>
