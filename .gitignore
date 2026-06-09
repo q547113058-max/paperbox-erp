@@ -1,10 +1,19 @@
 node_modules/
 .env
-apps/*/dist/
 
 # Build artifacts
 apps/*/dist/
 apps/*/node_modules/
+apps/server/test/*.js
+apps/server/test/*.d.ts
+apps/server/test/*.js.map
+apps/server/tsconfig.tsbuildinfo
+
+# Logs
+logs/
+
+# PM2
+.pm2/
 
 # OS
 .DS_Store
