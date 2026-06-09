@@ -37,3 +37,4 @@ export * from './work_order_materials';
 export * from './work_orders';
 export * from './workshop_inventory';
 export * from './workshop_inventory_logs';
+export * from './company';

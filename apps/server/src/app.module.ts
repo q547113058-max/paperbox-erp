@@ -39,6 +39,8 @@ import { WorkshopInventoryModule } from './workshop_inventory/workshop_inventory
 import { WorkshopInventoryLogModule } from './workshop_inventory_logs/workshop_inventory_logs.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { ExcelModule } from './excel/excel.module';
+import { PrintModule } from './print/print.module';
+import { ReportModule } from './report/report.module';
 import { Account } from './entities/accounts';
 import { ActionLog } from './entities/action_logs';
 import { ColorPrint } from './entities/color_prints';
@@ -77,6 +79,7 @@ import { WorkOrderMaterial } from './entities/work_order_materials';
 import { WorkOrder } from './entities/work_orders';
 import { WorkshopInventory } from './entities/workshop_inventory';
 import { WorkshopInventoryLog } from './entities/workshop_inventory_logs';
+import { Company } from './entities/company';
 
 const DB_PATH = '/data/erp-data/erp-system/erp.db';
 
@@ -96,6 +99,7 @@ const DB_PATH = '/data/erp-data/erp-system/erp.db';
         Setting, ShipmentSchedule, SpecOption, StockLog,
         Supplier, TrackingEvent, WarehouseEntry, WorkOrderMaterial,
         WorkOrder, WorkshopInventory, WorkshopInventoryLog,
+        Company,
       ],
       synchronize: false,
       logging: false,
@@ -137,6 +141,8 @@ const DB_PATH = '/data/erp-data/erp-system/erp.db';
     WorkshopInventoryLogModule,
     UploadsModule,
     ExcelModule,
+    PrintModule,
+    ReportModule,
   ],
 })
 export class AppModule implements OnModuleInit, OnModuleDestroy {
