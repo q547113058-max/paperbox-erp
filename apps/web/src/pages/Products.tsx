@@ -3,6 +3,7 @@ import { Table, Input, Button, Space, Tag, Popconfirm, message, Modal, Form, Inp
 import type { Product } from '../types/api';
 import api from '../utils/axios';
 import { ImageUpload } from '../components/ImageUpload';
+import { ExcelActions } from '../components/ExcelActions';
 
 const UNIT_OPTIONS = ['个', '套', '箱', '平方米', '米'];
 const STATUS_OPTIONS = ['正常生产', '已停产', '开发中', '打样'];
@@ -87,6 +88,7 @@ export default function Products() {
         <h2 style={{ margin: 0 }}>产品管理</h2>
         <Space>
           <Input placeholder="搜索编号/名称/规格" value={keyword} onChange={(e) => setKeyword(e.target.value)} style={{ width: 220 }} allowClear />
+          <ExcelActions entity="products" onImport={() => fetchData()} />
           <Button type="primary" onClick={handleCreate}>新增产品</Button>
         </Space>
       </div>
