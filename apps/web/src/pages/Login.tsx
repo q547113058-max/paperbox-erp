@@ -1,15 +1,18 @@
 import React from 'react';
 import { Form, Input, Button, Card, message } from 'antd';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth';
-import axios from 'axios';
+import api from '../utils/axios';
 
 export default function Login() {
   const setAuth = useAuthStore((s) => s.setAuth);
+  const navigate = useNavigate();
 
   const onFinish = async (values: { username: string; password: string }) => {
     try {
-      const res = await axios.post('/api/auth/login', values);
-      setAuth(res.data.token, res.data.user);
+      const res = await api.post('/auth/login', values);
+      setAuth(res.data.access_token, res.data.user);
+      navigate('/', { replace: true });
     } catch (e: any) {
       message.error(e.response?.data?.message || '登录失败');
     }
