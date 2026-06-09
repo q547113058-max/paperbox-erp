@@ -8,8 +8,11 @@
   "scripts": {
     "dev": "npm run dev --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present"
+    "test": "jest --runInBand --no-coverage",
+    "test:watch": "jest --watch",
+    "test:e2e": "jest apps/server/test --runInBand --no-coverage",
+    "lint": "eslint apps/server/src apps/web/src --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit -p apps/server/tsconfig.json"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

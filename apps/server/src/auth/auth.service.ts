@@ -14,8 +14,9 @@ export class AuthService {
   ) {}
 
   async validateUser(username: string, password: string): Promise<Account | null> {
+    if (!password) return null;
     const account = await this.accountRepo.findOne({ where: { username } });
-    if (!account) return null;
+    if (!account || !account.password) return null;
 
     // bcrypt hash
     if (account.password.startsWith('$2')) {
