@@ -1,5 +1,7 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import Database from 'better-sqlite3';
 import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
 import { OrdersModule } from './orders/orders.module';
@@ -74,11 +76,13 @@ import { WorkOrder } from './entities/work_orders';
 import { WorkshopInventory } from './entities/workshop_inventory';
 import { WorkshopInventoryLog } from './entities/workshop_inventory_logs';
 
+const DB_PATH = '/data/erp-data/erp-system/erp.db';
+
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
-      database: '/data/erp-data/erp-system/erp.db',
+      database: DB_PATH,
       entities: [
         Account, ActionLog, ColorPrint, Customer,
         Delivery, DeliveryItem, ErrorLog, FinanceFixedItem,
@@ -131,4 +135,42 @@ import { WorkshopInventoryLog } from './entities/workshop_inventory_logs';
     WorkshopInventoryLogModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements OnModuleInit, OnModuleDestroy {
+  private sqliteDb: InstanceType<typeof Database> | null = null;
+
+  constructor(private dataSource: DataSource) {}
+
+  onModuleInit() {
+    // 创建独立的 better-sqlite3 连接来配置 pragma
+    try {
+      this.sqliteDb = new Database(DB_PATH);
+      
+      // 启用 WAL 模式 - 关键：确保数据在重启时不丢失
+      this.sqliteDb.pragma('journal_mode = WAL');
+      // synchronous = NORMAL - 性能和安全的平衡点
+      this.sqliteDb.pragma('synchronous = NORMAL');
+      // busy timeout - 防止并发写入时立即失败
+      this.sqliteDb.pragma('busy_timeout = 5000');
+      
+      const journalMode = this.sqliteDb.pragma('journal_mode', { simple: true });
+      const syncMode = this.sqliteDb.pragma('synchronous', { simple: true });
+      console.log(`[SQLite] WAL mode: ${journalMode}, synchronous: ${syncMode}`);
+      
+      // 关闭独立连接（pragma 已持久化到数据库文件）
+      this.sqliteDb.close();
+      this.sqliteDb = null;
+    } catch (err) {
+      console.error('[SQLite] Error configuring pragmas:', err.message);
+    }
+  }
+
+  onModuleDestroy() {
+    // 优雅关闭时 checkpoint WAL
+    if (this.sqliteDb) {
+      try {
+        this.sqliteDb.pragma('wal_checkpoint(TRUNCATE)');
+        this.sqliteDb.close();
+      } catch {}
+    }
+  }
+}

@@ -29,12 +29,14 @@ export class OrdersService {
     return { ...order, items };
   }
 
-  async create(data: { order?: Partial<Order>; items?: Partial<OrderItem>[] }) {
-    const { order: orderData, items = [] } = data;
+  async create(data: any) {
+    // 支持两种格式：{ order: {...}, items: [...] } 或扁平 { order_no: '...', ... }
+    const orderData = data.order || data;
+    const items = data.items || [];
     const entity = this.orderRepo.create(orderData as Order);
     const saved = await this.orderRepo.save(entity);
     const savedItems = await Promise.all(
-      items.map(item => {
+      items.map((item: any) => {
         const e = this.itemRepo.create({ ...item, order_id: saved.id } as OrderItem);
         return this.itemRepo.save(e);
       })
