@@ -116,15 +116,22 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3003/api/products
 
 ## 质量门禁（交付前必跑）
 
-按 dw-skills 09 文档：
-1. ✅ `tsc --noEmit` — 类型检查
-2. ✅ `vite build` — 前端构建
-3. ⚠️ ESLint — 待加（见 dev-logs TODO）
-4. ⚠️ 单元测试 — 待加（见 dev-logs TODO）
-5. ⚠️ Pre-commit hook — 待加
+按 dw-skills 09 文档，一键执行：
+```bash
+npm run typecheck && npm test && npm run lint && npm run build && bash scripts/smoke.sh
+```
+
+| 检查项 | 命令 | 状态 |
+|--------|------|------|
+| 类型检查 | `npm run typecheck` | ✅ 0 errors |
+| 单元测试 | `npm test` | ✅ 15 passed |
+| ESLint | `npm run lint` | ✅ 0 errors, 27 warnings |
+| 前端构建 | `npm run build` | ✅ 代码分割 |
+| 冒烟测试 | `bash scripts/smoke.sh` | ✅ 12/12 passed |
 
 ## 当前会话质量等级
 
-最近一次完成（2026-06-09）：**B+**
-- 已做：脚手架 / TypeORM entities / JWT 鉴权 / CRUD 模块 / 前端 11 页面 / 端到端验证
-- 未做：ESLint / 单元测试 / design tokens 文档 / 严格 TDD
+最近一次完成（2026-06-09）：**A-**
+- 已做：脚手架 / TypeORM entities / JWT 鉴权 / CRUD 模块 / 前端 11 页面 / 端到端验证 / ESLint / 单元测试 / smoke 测试
+- 已补：project-requirements.md / refactor-findings / design-tokens / dev-logs
+- 遗留：27 个 ESLint warnings（无 error）/ 部分页面只有只读列表
