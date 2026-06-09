@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Layout as AntLayout, Menu, Dropdown, Button, Space } from 'antd';
+import React, { useMemo, useState } from 'react';
+import { Layout as AntLayout, Menu, Dropdown, Button, Drawer } from 'antd';
 import {
   DashboardOutlined,
   AppstoreOutlined,
@@ -11,6 +11,7 @@ import {
   SettingOutlined,
   UserOutlined,
   LogoutOutlined,
+  MenuOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth';
@@ -23,7 +24,6 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   finance: ['/', '/orders', '/purchases', '/finance', '/customers', '/suppliers'],
   warehouse: ['/', '/products', '/orders', '/warehouse', '/deliveries', '/materials'],
   sales: ['/', '/products', '/orders', '/customers', '/deliveries'],
-  // 默认：只有概览
   default: ['/'],
 };
 
@@ -45,6 +45,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // 监听窗口大小
+  React.useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // 根据角色过滤菜单
   const menuItems = useMemo(() => {
@@ -58,35 +67,81 @@ export function Layout({ children }: { children: React.ReactNode }) {
     navigate('/login', { replace: true });
   };
 
+  const handleMenuClick = ({ key }: { key: string }) => {
+    navigate(key);
+    if (isMobile) setDrawerOpen(false);
+  };
+
   const userMenuItems = [
     { key: 'role', label: `角色: ${user?.role || '-'}`, disabled: true },
     { key: 'logout', label: '退出登录', icon: <LogoutOutlined />, onClick: handleLogout },
   ];
 
+  const siderContent = (
+    <>
+      <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #f0f0f0', fontSize: 16, fontWeight: 500 }}>
+        纸箱 ERP
+      </div>
+      <Menu
+        mode="inline"
+        selectedKeys={[location.pathname]}
+        items={menuItems}
+        onClick={handleMenuClick}
+        style={{ height: '100%', borderRight: 0 }}
+      />
+    </>
+  );
+
   return (
     <AntLayout style={{ minHeight: '100vh' }}>
-      <Sider width={200} style={{ background: '#fff' }}>
-        <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #f0f0f0', fontSize: 16, fontWeight: 500 }}>
-          纸箱 ERP
-        </div>
-        <Menu
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          onClick={({ key }) => navigate(key)}
-          style={{ height: '100%', borderRight: 0 }}
-        />
-      </Sider>
+      {/* 移动端：抽屉式侧边栏 */}
+      {isMobile ? (
+        <Drawer
+          placement="left"
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          width={200}
+          styles={{ body: { padding: 0 } }}
+        >
+          {siderContent}
+        </Drawer>
+      ) : (
+        <Sider width={200} style={{ background: '#fff' }}>
+          {siderContent}
+        </Sider>
+      )}
+      
       <AntLayout>
-        <Header style={{ background: '#fff', padding: '0 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 14, color: '#666' }}>纸箱 ERP</span>
+        <Header style={{ 
+          background: '#fff', 
+          padding: '0 16px', 
+          borderBottom: '1px solid #f0f0f0', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between' 
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {isMobile && (
+              <Button 
+                type="text" 
+                icon={<MenuOutlined />} 
+                onClick={() => setDrawerOpen(true)}
+              />
+            )}
+            <span style={{ fontSize: 14, color: '#666' }}>纸箱 ERP</span>
+          </div>
           <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
             <Button type="text" icon={<UserOutlined />}>
               {user?.real_name || user?.username || '用户'}
             </Button>
           </Dropdown>
         </Header>
-        <Content style={{ margin: 16, padding: 24, background: '#fff', minHeight: 280 }}>
+        <Content style={{ 
+          margin: isMobile ? 8 : 16, 
+          padding: isMobile ? 12 : 24, 
+          background: '#fff', 
+          minHeight: 280 
+        }}>
           {children}
         </Content>
       </AntLayout>
