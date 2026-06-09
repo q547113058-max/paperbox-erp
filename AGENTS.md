@@ -70,6 +70,20 @@
   -- username: 'demo' / password: 'demo' (bcrypt hash)
   ```
 
+### 坑 #6: SQLite 数据不持久化（重启后丢失）
+- **触发**：编辑/创建数据后重启 server，数据被还原
+- **症状**：`erp.db` 修改时间不变，`erp.db-wal` 有更新但未 checkpoint
+- **必须行为**：在 AppModule 中配置 SQLite pragma
+  ```typescript
+  // app.module.ts - OnModuleInit
+  const db = new Database(DB_PATH);
+  db.pragma('journal_mode = WAL');
+  db.pragma('synchronous = NORMAL');
+  db.pragma('busy_timeout = 5000');
+  db.close();
+  ```
+- **禁止**：依赖 TypeORM 默认配置（不启用 WAL）
+
 ### 坑 #5: 前端 API 路径前缀
 - **触发**：前端 `/api/auth/login` 404
 - **必须行为**：`main.ts` 中 `app.setGlobalPrefix('api')`（已就位）
