@@ -430,3 +430,35 @@ POST   /api/purchases/:id/update-no    更新单号（合并打印）
 | Payables | 不存在 | ✅ 新增完整应付管理 |
 
 P0 旧系统核心业务页复刻缺口：已全部补完。
+
+
+---
+
+## 全链路回归发现：P0 阻断为 0，P1 UI/数据展示待修（2026-06-10）
+
+### 验证命令/方式
+
+- 后端：浏览器登录态授权 GET `/api/products`、`/api/orders`、`/api/work_orders`、`/api/purchases`、`/api/deliveries`、`/api/finance_records` 等 15 个接口。
+- 前端：浏览器逐页访问 12 个核心路由：`/`、`/products`、`/orders`、`/work_orders`、`/purchases`、`/outsourcing_orders`、`/warehouse`、`/deliveries`、`/reconciliation_bills`、`/finance`、`/receivables`、`/payables`。
+- 视觉：browser_vision 检查 Orders/Purchases/Deliveries/Finance/Receivables/Payables。
+- console：browser_console 0 errors / 0 messages。
+
+完整报告：`docs/regression-report-2026-06-10-p0-pages.md`。
+
+### 结论
+
+- P0：0 个。无白屏、无接口 500、无页面崩溃、无 console exception。
+- P1：6 个，集中在表格可读性与数据兜底。
+
+### P1 待修
+
+1. `/orders`：右侧金额/操作列视觉拥挤，疑似 fixed 操作列遮挡感。
+2. `/purchases`：长采购单号换行断裂。
+3. `/purchases`：待审批行操作按钮过多，视觉拥挤且存在误点风险。
+4. `/deliveries`：客户/关联订单出现 `ID:null`，技术型兜底文案暴露给用户。
+5. `/receivables`：到期日列宽不足，部分日期疑似截断。
+6. `/receivables`：操作按钮拥挤，冲正/删除等危险操作建议收纳。
+
+### 建议下一档
+
+P1 修复优先级：先修 `/deliveries` 的 `ID:null` 和所有表格 `nowrap/Tooltip`，再把危险/低频操作收纳到「更多」。
