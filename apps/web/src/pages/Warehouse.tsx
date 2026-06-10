@@ -25,7 +25,7 @@ export default function Warehouse() {
   useEffect(() => {
     fetchData();
     api.get('/orders').then((r) => setOrders(r.data)).catch(() => {});
-    api.get('/work-orders').then((r) => setWorkOrders(r.data)).catch(() => {});
+    api.get('/work_orders').then((r) => setWorkOrders(r.data)).catch(() => {});
   }, []);
 
   const orderMap = new Map(orders.map((o) => [o.id, o.order_no || `#${o.id}`]));
