@@ -108,6 +108,29 @@ export interface Purchase {
   delivery_address: string;
 }
 
+export interface PurchaseItem {
+  id: number;
+  purchase_id: number;
+  material_name: string;
+  spec: string;
+  quantity: number;
+  unit_price: number;
+  amount: number;
+  ref_info: string;
+  paper_type: string;
+  unit: string;
+  delivery_address: string;
+}
+
+export interface Supplier {
+  id: number;
+  name: string;
+  contact: string;
+  phone: string;
+  address: string;
+  status: string;
+}
+
 export interface WarehouseEntry {
   id: number;
   entry_no: string | null;
@@ -127,6 +150,14 @@ export interface Delivery {
   status: string;
   delivery_date: string;
   created_at?: string;
+  delivery_no?: string;
+  customer_id?: number;
+  delivery_person?: string;
+  delivery_time?: string;
+  address?: string;
+  signed?: number;
+  signed_at?: string;
+  work_order_id?: number;
 }
 
 export interface FinanceRecord {
@@ -136,4 +167,114 @@ export interface FinanceRecord {
   ref_no: string;
   remark: string;
   created_at?: string;
+}
+
+// ============ 业务流转相关（Phase 4 新增） ============
+
+export interface WorkOrder {
+  id: number;
+  prod_no: string | null;
+  order_id: number;
+  product_id: number;
+  quantity: number | null;
+  material_type: string;
+  box_type: string;
+  board_length: number;
+  board_width: number;
+  board_area: number;
+  labor_hours: number;
+  processes: string;
+  status: string;
+  priority: string;
+  worker: string;
+  start_time: string;
+  end_time: string;
+  completed_qty: number;
+  materials_json: string;
+  created_at: string;
+  entry_code: string;
+  finished_spec: string;
+}
+
+export interface OutsourcingOrder {
+  id: number;
+  order_no: string | null;
+  work_order_id: number;
+  material_name: string;
+  material_spec: string;
+  quantity: number;
+  unit: string;
+  supplier_id: number;
+  status: string;
+  planned_date: string;
+  completed_date: string;
+  received_qty: number;
+  remark: string;
+  created_at: string;
+  customer_id: number;
+  size_structure: string;
+  paper_size: string;
+  machine_size: string;
+  machine_quantity: number;
+  finished_quantity: number;
+  print_color: string;
+  follow_version: string;
+  surface_treatment: string;
+  unit_price: number;
+  is_settled: number;
+}
+
+export interface ReconciliationBill {
+  id: number;
+  bill_no: string | null;
+  customer_id: number;
+  period_start: string;
+  period_end: string;
+  total_amount: number;
+  total_qty: number;
+  status: string;
+  confirmed_at: string;
+  remark: string;
+  created_at: string;
+}
+
+export interface ReconciliationItem {
+  id: number;
+  bill_id: number;
+  delivery_id: number;
+  delivery_no: string;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  amount: number;
+  delivery_date: string;
+  created_at: string;
+}
+
+export interface WorkshopInventory {
+  id: number;
+  material_name: string | null;
+  material_spec: string;
+  material_type: string | null;
+  quantity: number;
+  unit: string;
+  source_type: string;
+  source_id: number;
+  work_order_id: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkshopInventoryLog {
+  id: number;
+  material_name: string | null;
+  material_spec: string;
+  type: string | null;
+  quantity: number | null;
+  ref_type: string;
+  ref_id: number;
+  work_order_id: number;
+  remark: string;
+  created_at: string;
 }
