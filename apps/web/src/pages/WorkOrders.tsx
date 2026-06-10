@@ -43,6 +43,7 @@ function fmtTime(v: string | null | undefined): string {
 
 export default function WorkOrders() {
   const [data, setData] = useState<WorkOrder[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
@@ -53,12 +54,21 @@ export default function WorkOrders() {
 
   const fetchAll = () => {
     setLoading(true);
-    api.get('/work_orders').then((r) => setData(r.data))
+    Promise.all([
+      api.get('/work_orders'),
+      api.get('/products').catch(() => ({ data: [] })),
+    ])
+      .then(([wo, p]) => {
+        setData(wo.data || []);
+        setProducts(p.data || []);
+      })
       .catch(() => message.error('加载失败'))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { fetchAll(); }, []);
+
+  const productMap = Object.fromEntries(products.map((p: any) => [p.id, p.name || p.code || `产品#${p.id}`]));
 
   const filtered = data.filter((w) =>
     !keyword || w.prod_no?.includes(keyword) || String(w.order_id).includes(keyword)
@@ -227,7 +237,8 @@ export default function WorkOrders() {
       ) : <span style={{ color: '#bfbfbf' }}>TMP-{r.id}</span>,
     },
     { title: '订单ID', dataIndex: 'order_id', key: 'order_id', width: 80 },
-    { title: '产品ID', dataIndex: 'product_id', key: 'product_id', width: 80 },
+    { title: '产品名称', dataIndex: 'product_id', key: 'product_id', width: 120,
+      render: (id: number) => productMap[id] || `产品#${id}` },
     { title: '数量', dataIndex: 'quantity', key: 'quantity', width: 80, align: 'right' as const,
       render: (v: number | null) => v ?? '-' },
     { title: '工人', dataIndex: 'worker', key: 'worker', width: 90,
@@ -404,8 +415,8 @@ export default function WorkOrders() {
               <Descriptions.Item label="关联订单">
                 {detailWo.order_id ? `#${detailWo.order_id}` : '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="产品ID">
-                {detailWo.product_id ? `#${detailWo.product_id}` : '-'}
+              <Descriptions.Item label="产品名称">
+                {detailWo.product_id ? (productMap[detailWo.product_id] || `产品#${detailWo.product_id}`) : '-'}
               </Descriptions.Item>
               <Descriptions.Item label="创建时间" span={2}>
                 {fmtTime(detailWo.created_at)}
