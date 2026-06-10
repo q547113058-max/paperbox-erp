@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Input, Tabs, Table, Tag, Spin, Empty, Card, Button,
+  Table, Tag, Empty, Card, Button,
 } from 'antd';
 import {
-  SearchOutlined, ReloadOutlined,
+  ReloadOutlined,
   FileTextOutlined, ToolOutlined, CarOutlined, AppstoreOutlined, TeamOutlined, BankOutlined,
-  LoadingOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -217,8 +216,7 @@ export default function GlobalSearch() {
   const [searchParams] = useSearchParams();
   const urlQ = searchParams.get('q') || '';
   const [keyword, setKeyword] = useState(urlQ);
-  const [appliedKeyword, setAppliedKeyword] = useState(urlQ); // 真正触发搜索的关键词（防抖后）
-  const [activeTab, setActiveTab] = useState<ModuleKey>('orders');
+  const [appliedKeyword, setAppliedKeyword] = useState(urlQ);
   const [states, setStates] = useState<Record<ModuleKey, ModuleState>>(() => {
     const o = {} as Record<ModuleKey, ModuleState>;
     MODULES.forEach((m) => { o[m.key] = initialModuleState(); });
@@ -314,20 +312,9 @@ export default function GlobalSearch() {
     return out;
   }, [states, appliedKeyword]);
 
-  // KPI 统计
-  const kpi = useMemo(() => {
-    const totalResults = MODULES.reduce((sum, m) => sum + (filteredByModule[m.key]?.total || 0), 0);
-    return { totalResults };
-  }, [filteredByModule]);
-
   const handleRowClick = (mod: ModuleConfig, row: any) => {
     const id = mod.rowKey(row);
     navigate(mod.detailPath(id));
-  };
-
-  const handleReset = () => {
-    setKeyword('');
-    setAppliedKeyword('');
   };
 
   const handleRefresh = () => {
@@ -364,185 +351,73 @@ export default function GlobalSearch() {
     });
   };
 
-  // Tab 标题：模块名 + 数量
-  const renderTabTitle = (m: ModuleConfig) => {
-    const count = filteredByModule[m.key]?.total || 0;
-    return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-        {m.icon}
-        <span>{m.label}</span>
-        {count > 0 && (
-          <span
-            style={{
-              background: appliedKeyword ? BRAND : '#94a3b8',
-              color: '#fff',
-              borderRadius: 10,
-              fontSize: 11,
-              padding: '0 7px',
-              minWidth: 18,
-              textAlign: 'center' as const,
-              fontWeight: 500,
-            }}
-          >
-            {count}
-          </span>
-        )}
-      </span>
-    );
-  };
-
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto' }}>
-      {/* 搜索框 */}
-      <Card
-        bordered={false}
-        style={{
-          marginBottom: 16,
-          background: 'linear-gradient(135deg, #f0f5fb 0%, #ffffff 100%)',
-          boxShadow: '0 1px 4px rgba(44,82,130,0.08)',
-        }}
-        bodyStyle={{ padding: '24px 24px 20px' }}
-      >
-        <div style={{ position: 'relative' }}>
-          <Input
-            allowClear
-            size="large"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            onPressEnter={() => setAppliedKeyword(keyword.trim())}
-            placeholder="搜索订单号 / 工单号 / 送货单号 / 产品编号 / 客户名 / 对方单位..."
-            prefix={
-              <SearchOutlined style={{ color: BRAND, fontSize: 18, marginRight: 6 }} />
+    <div>
+      {MODULES.map((m) => {
+        const st = states[m.key];
+        const rows = filteredByModule[m.key]?.rows || [];
+        const total = filteredByModule[m.key]?.total || 0;
+        return (
+          <Card
+            key={m.key}
+            bordered={false}
+            size="small"
+            title={
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                {m.icon}
+                <span style={{ fontWeight: 600 }}>{m.label}</span>
+                {total > 0 && (
+                  <span style={{ background: appliedKeyword ? BRAND : '#94a3b8', color: '#fff', borderRadius: 10, fontSize: 11, padding: '0 7px', minWidth: 18, textAlign: 'center' }}>{total}</span>
+                )}
+              </span>
             }
-            suffix={
-              globalLoading || appliedKeyword !== keyword.trim() ? (
-                <Spin indicator={<LoadingOutlined style={{ fontSize: 18, color: BRAND }} spin />} />
+            extra={
+              rows.length > 0 ? (
+                <Button type="link" size="small" onClick={() => navigate(m.endpoint)}>查看全部 →</Button>
               ) : null
             }
-            style={{
-              fontSize: 16,
-              height: 52,
-              borderRadius: 8,
-              borderColor: BRAND,
-              boxShadow: `0 0 0 2px ${BRAND}1A`,
-            }}
-          />
-        </div>
-      </Card>
-
-      {/* Tabs 结果区 */}
-      <Card
-        bordered={false}
-        bodyStyle={{ padding: 0 }}
-        style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
-      >
-        <Tabs
-          activeKey={activeTab}
-          onChange={(k) => setActiveTab(k as ModuleKey)}
-          type="line"
-          size="large"
-          tabBarStyle={{
-            margin: 0,
-            padding: '0 16px',
-            borderBottom: '1px solid #f0f0f0',
-            background: '#fafbfc',
-          }}
-          items={MODULES.map((m) => {
-            const st = states[m.key];
-            const rows = filteredByModule[m.key]?.rows || [];
-            return {
-              key: m.key,
-              label: renderTabTitle(m),
-              children: (
-                <div style={{ padding: '8px 16px 16px' }}>
-                  {st.error ? (
-                    <Empty
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      description={
-                        <span style={{ color: '#f5222d' }}>
-                          {m.label}模块加载失败：{st.error}
-                        </span>
-                      }
-                    >
-                      <Button onClick={handleRefresh} icon={<ReloadOutlined />}>重试</Button>
-                    </Empty>
-                  ) : (
-                    <Table
-                      rowKey={m.rowKey}
-                      size="small"
-                      loading={st.loading && st.data.length === 0}
-                      columns={m.columns.map((col: any) => ({
-                        ...col,
-                        // 高亮匹配关键词
-                        render: col.render || ((v: any) => v ?? '-'),
-                      }))}
-                      dataSource={rows}
-                      pagination={false}
-                      scroll={{ x: 'max-content' }}
-                      onRow={(record) => ({
-                        onClick: () => handleRowClick(m, record),
-                        style: { cursor: 'pointer' },
-                      })}
-                      rowClassName={() => 'global-search-row'}
-                      locale={{
-                        emptyText: (
-                          <TableEmptyCell
-                            resource={m.label}
-                            keyword={appliedKeyword}
-                            isDataEmpty={st.data.length === 0}
-                            preset="minimal"
-                            hint={st.data.length === 0 ? '该模块暂无数据' : '试试其他关键词或清除搜索条件'}
-                          />
-                        ),
-                      }}
-                      summary={() => {
-                        if (rows.length === 0) return null;
-                        return (
-                          <Table.Summary fixed>
-                            <Table.Summary.Row>
-                              <Table.Summary.Cell index={0} colSpan={m.columns.length}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: 12 }}>
-                                  <span>
-                                    显示 <b style={{ color: BRAND }}>{rows.length}</b> 条
-                                    {appliedKeyword && <>，共匹配 <b style={{ color: BRAND }}>{st.data.filter((r) => calcMatch(r, m.searchFields(r), appliedKeyword)).length}</b> 条</>}
-                                  </span>
-                                  {rows.length > 0 && (
-                                    <Button type="link" size="small" onClick={() => navigate(m.endpoint)}>
-                                      查看全部 {m.label} →
-                                    </Button>
-                                  )}
-                                </div>
-                              </Table.Summary.Cell>
-                            </Table.Summary.Row>
-                          </Table.Summary>
-                        );
-                      }}
+            style={{ marginBottom: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+          >
+            {st.error ? (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={<span style={{ color: '#f5222d' }}>{m.label}模块加载失败：{st.error}</span>}
+              >
+                <Button onClick={handleRefresh} icon={<ReloadOutlined />}>重试</Button>
+              </Empty>
+            ) : (
+              <Table
+                rowKey={m.rowKey}
+                size="small"
+                loading={st.loading && st.data.length === 0}
+                columns={m.columns.map((col: any) => ({
+                  ...col,
+                  render: col.render || ((v: any) => v ?? '-'),
+                }))}
+                dataSource={rows}
+                pagination={false}
+                scroll={{ x: 'max-content' }}
+                onRow={(record) => ({
+                  onClick: () => handleRowClick(m, record),
+                  style: { cursor: 'pointer' },
+                })}
+                rowClassName={() => 'global-search-row'}
+                locale={{
+                  emptyText: (
+                    <TableEmptyCell
+                      resource={m.label}
+                      keyword={appliedKeyword}
+                      isDataEmpty={st.data.length === 0}
+                      preset="minimal"
+                      hint={st.data.length === 0 ? '该模块暂无数据' : '试试其他关键词或清除搜索条件'}
                     />
-                  )}
-                </div>
-              ),
-            };
-          })}
-        />
-      </Card>
-
-      {/* 全局 loading 覆盖 */}
-      {globalLoading && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(255,255,255,0.35)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            pointerEvents: 'none',
-          }}
-        >
-          <Spin size="large" tip="正在并行加载 6 个模块..." />
-        </div>
-      )}
+                  ),
+                }}
+              />
+            )}
+          </Card>
+        );
+      })}
 
       <style>{`
         .global-search-row:hover > td {
