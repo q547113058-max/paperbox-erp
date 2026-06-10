@@ -23,9 +23,9 @@ export default function KnifeDies() {
   const fetchAll = () => {
     setLoading(true);
     Promise.all([
-      api.get('/knife-dies'),
+      api.get('/knife_dies'),
       api.get('/customers'),
-      api.get('/spec-options'),
+      api.get('/spec_options'),
     ]).then(([kd, cust, spec]) => {
       setData(kd.data);
       setCustomers(cust.data);
@@ -51,10 +51,10 @@ export default function KnifeDies() {
     try {
       const values = await form.validateFields();
       if (editing) {
-        await api.put(`/knife-dies/${editing.id}`, values);
+        await api.put(`/knife_dies/${editing.id}`, values);
         message.success('更新成功');
       } else {
-        await api.post('/knife-dies', values);
+        await api.post('/knife_dies', values);
         message.success('新建成功');
       }
       setModalOpen(false);
@@ -65,7 +65,7 @@ export default function KnifeDies() {
   };
 
   const handleDelete = async (id: number) => {
-    try { await api.delete(`/knife-dies/${id}`); message.success('已删除'); fetchAll(); } catch { message.error('删除失败'); }
+    try { await api.delete(`/knife_dies/${id}`); message.success('已删除'); fetchAll(); } catch { message.error('删除失败'); }
   };
 
   const openDetail = (r: any) => { setDetail(r); setDetailOpen(true); };

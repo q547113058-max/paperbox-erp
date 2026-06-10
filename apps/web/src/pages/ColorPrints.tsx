@@ -22,7 +22,7 @@ export default function ColorPrints() {
   const load = () => {
     setLoading(true);
     Promise.all([
-      api.get('/color-prints'),
+      api.get('/color_prints'),
       api.get('/products'),
       api.get('/customers'),
     ]).then(([cp, prod, cust]) => {
@@ -43,7 +43,7 @@ export default function ColorPrints() {
     try {
       const vals = await createForm.validateFields();
       const items = vals.items || (vals.item_name ? [vals] : []);
-      await api.post('/color-prints', {
+      await api.post('/color_prints', {
         name: vals.name,
         product_id: vals.product_id,
         customer_id: vals.customer_id,
@@ -67,7 +67,7 @@ export default function ColorPrints() {
   const handleEdit = async () => {
     try {
       const vals = await editForm.validateFields();
-      await api.put(`/color-prints/${selectedPrint.id}`, vals);
+      await api.put(`/color_prints/${selectedPrint.id}`, vals);
       message.success('更新成功');
       setShowEdit(false);
       load();
@@ -78,12 +78,12 @@ export default function ColorPrints() {
   };
 
   const handleDelete = async (id: number) => {
-    try { await api.delete(`/color-prints/${id}`); message.success('已删除'); load(); } catch { message.error('删除失败'); }
+    try { await api.delete(`/color_prints/${id}`); message.success('已删除'); load(); } catch { message.error('删除失败'); }
   };
 
   const viewDetail = async (print: any) => {
     try {
-      const res = await api.get(`/color-prints/${print.id}`);
+      const res = await api.get(`/color_prints/${print.id}`);
       setSelectedPrint(res.data);
       setShowDetail(true);
     } catch {
