@@ -245,27 +245,6 @@ export default function WorkOrders() {
       } },
     { title: '状态', dataIndex: 'status', key: 'status', width: 90, align: 'center' as const,
       render: (s: string) => <Tag color={getStatusColor(s)}>{s}</Tag> },
-    // 完成进度（antd Progress 组件 + 颜色区间）
-    { title: '完成进度', key: 'progress_pct', width: 160, align: 'center' as const,
-      render: (_: any, r: WorkOrder) => {
-        const pct = calcProgress(r);
-        const done = Number(r.completed_qty || 0);
-        const total = Number(r.quantity || 0);
-        return (
-          <Tooltip title={`${done} / ${total}`}>
-            <Progress
-              percent={pct}
-              size="small"
-              strokeColor={progressColor(pct)}
-              format={(p) => (
-                <span style={{ color: progressColor(pct || 0), fontSize: 11, fontWeight: 600 }}>
-                  {p}%
-                </span>
-              )}
-            />
-          </Tooltip>
-        );
-      } },
     // 已发数量 / 待发数量
     { title: '已发数量', key: 'delivered_qty', width: 90, align: 'right' as const,
       render: (_: any, r: WorkOrder) => {
