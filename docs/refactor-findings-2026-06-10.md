@@ -542,3 +542,44 @@ P1 修复后剩余 P2：
 
 - 本轮按用户要求仅部署测试服，未同步正式服。
 
+---
+
+## 交互验证 + P2/P3 展示差异扫描（2026-06-10 晚间）
+
+### 背景
+
+A：逐按钮交互验证（测试服）
+C：继续查旧系统 P2/P3 展示差异
+
+### A 交互验证结果
+
+| 页面 | 安全操作 | 危险操作 |
+|------|----------|----------|
+| 发货管理 | 7/7 PASS | — |
+| 订单管理 | 5/5 PASS | 工单/发货 直接 POST（跳过） |
+| 采购管理 | 5/5 PASS | 审批/入库 直接 POST（跳过） |
+| 应收管理 | 5/5 PASS | 结清 直接 PUT（跳过） |
+| 应付管理 | 2/2 PASS | — |
+
+### QA 发现
+
+| # | 问题 | 严重性 |
+|---|------|--------|
+| QA-1 | 订单工单/发货直接 POST 无确认 | Medium |
+| QA-2 | 采购审批/入库直接 POST 无确认 | Medium |
+| QA-3 | 应收结清直接 PUT 无确认 | Medium |
+| QA-4 | 订单客户列 ID:${id} 兜底 | Low |
+| QA-5 | 订单业务员列 ID:${id} 兜底 | Low |
+| QA-6 | 应收详情标题不一致 | Low |
+
+### C P2/P3 差异扫描
+
+- 高价值 P2：Products > Dashboard > WorkOrders > OutsourcingOrders > Customers
+- P3：ActionLogs/GlobalSearch/Guide/ImageLibrary
+- 详见 `p2-p3-display-gap-audit-2026-06-10.md`
+
+### 验收
+
+- browser_console：0 errors
+- 仅测试服，未同步正式服
+
