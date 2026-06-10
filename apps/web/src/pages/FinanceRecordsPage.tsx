@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Table, Input, Button, Space, Tag, message, Modal, Form, InputNumber,
-  Select, DatePicker, Row, Col, Divider, Card, Statistic, Popconfirm,
+  Select, DatePicker, Row, Col, Divider, Card, Statistic, Tooltip, Dropdown,
 } from 'antd';
 import {
   PlusOutlined, EyeOutlined, CheckOutlined, DownloadOutlined,
-  StopOutlined, EditOutlined, DeleteOutlined, SearchOutlined, ReloadOutlined,
+  StopOutlined, EditOutlined, DeleteOutlined, SearchOutlined, ReloadOutlined, MoreOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -235,18 +235,18 @@ export default function FinanceRecordsPage({ type, title, partyLabel, partyPlace
   };
 
   const columns = [
-    { title: '单号', dataIndex: 'ref_no', key: 'ref_no', width: 140, fixed: 'left' as const,
-      render: (v: string, r: FinanceRecord) => v || <Tag color="orange">FIN-{r.id}</Tag> },
+    { title: '单号', dataIndex: 'ref_no', key: 'ref_no', width: 150, fixed: 'left' as const,
+      render: (v: string, r: FinanceRecord) => v ? <Tooltip title={v}><span style={{ whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{v}</span></Tooltip> : <Tag color="orange">FIN-{r.id}</Tag> },
     { title: '来源', dataIndex: 'ref_type', key: 'ref_type', width: 110, render: (v: string) => v || '-' },
     { title: partyLabel, dataIndex: 'party_name', key: 'party_name', width: 160, render: (v: string) => v || '-' },
     { title: '金额', dataIndex: 'amount', key: 'amount', width: 120, align: 'right' as const,
       render: (v: number, r: FinanceRecord) => <span style={{ fontWeight: 700, color: r.status === '已冲正' ? '#94a3b8' : amountColor }}>{fmtMoney(v)}</span> },
     { title: '状态', dataIndex: 'status', key: 'status', width: 90, align: 'center' as const,
       render: (s: string) => <Tag color={getStatusColor(s)}>{s || '-'}</Tag> },
-    { title: '到期日', dataIndex: 'due_date', key: 'due_date', width: 110,
+    { title: '到期日', dataIndex: 'due_date', key: 'due_date', width: 130,
       render: (v: string, r: FinanceRecord) => {
         const overdue = r.status !== '已结清' && r.status !== '已冲正' && v && dayjs(v).isBefore(dayjs(), 'day');
-        return <span style={{ color: overdue ? '#cf1322' : undefined, fontWeight: overdue ? 600 : undefined }}>{v || '-'}</span>;
+        return <span style={{ color: overdue ? '#cf1322' : undefined, fontWeight: overdue ? 600 : undefined, whiteSpace: 'nowrap' }}>{v || '-'}</span>;
       } },
     { title: '账期', dataIndex: 'period_type', key: 'period_type', width: 90, render: (v: string) => v || '-' },
     { title: '类别', dataIndex: 'category', key: 'category', width: 120, render: (v: string) => v || '-' },
@@ -254,26 +254,39 @@ export default function FinanceRecordsPage({ type, title, partyLabel, partyPlace
     { title: '结清时间', dataIndex: 'paid_at', key: 'paid_at', width: 150, render: fmtDate },
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 150, render: fmtDate },
     {
-      title: '操作', key: 'action', width: 280, fixed: 'right' as const,
-      render: (_: any, r: FinanceRecord) => (
-        <Space size={4} wrap>
-          <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => openDetail(r)}>详情</Button>
-          {r.status !== '已结清' && r.status !== '已冲正' && (
-            <Button size="small" type="link" icon={<CheckOutlined />} onClick={() => handleSettle(r)}>结清</Button>
-          )}
-          {r.status !== '已冲正' && (
-            <Button size="small" type="link" danger icon={<StopOutlined />} onClick={() => handleCancelRecord(r)}>冲正</Button>
-          )}
-          {r.status !== '已冲正' && (
-            <Button size="small" type="link" icon={<EditOutlined />} onClick={() => openEdit(r)}>编辑</Button>
-          )}
-          {r.status === '未结清' && (
-            <Popconfirm title="确认删除此财务记录？" onConfirm={() => handleDelete(r)}>
-              <Button size="small" type="link" danger icon={<DeleteOutlined />}>删除</Button>
-            </Popconfirm>
-          )}
-        </Space>
-      ),
+      title: '操作', key: 'action', width: 190, fixed: 'right' as const,
+      render: (_: any, r: FinanceRecord) => {
+        const moreItems = [
+          ...(r.status !== '已冲正' ? [{ key: 'cancel', label: '冲正', icon: <StopOutlined />, danger: true }] : []),
+          ...(r.status !== '已冲正' ? [{ key: 'edit', label: '编辑', icon: <EditOutlined /> }] : []),
+          ...(r.status === '未结清' ? [{ key: 'delete', label: '删除', icon: <DeleteOutlined />, danger: true }] : []),
+        ];
+        return (
+          <Space size={4}>
+            <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => openDetail(r)}>详情</Button>
+            {r.status !== '已结清' && r.status !== '已冲正' && (
+              <Button size="small" type="link" icon={<CheckOutlined />} onClick={() => handleSettle(r)}>结清</Button>
+            )}
+            {moreItems.length > 0 && (
+              <Dropdown
+                trigger={['click']}
+                menu={{
+                  items: moreItems,
+                  onClick: ({ key }) => {
+                    if (key === 'cancel') handleCancelRecord(r);
+                    if (key === 'edit') openEdit(r);
+                    if (key === 'delete') {
+                      Modal.confirm({ title: '确认删除此财务记录？', okText: '删除', cancelText: '取消', okButtonProps: { danger: true }, onOk: () => handleDelete(r) });
+                    }
+                  },
+                }}
+              >
+                <Button size="small" type="link" icon={<MoreOutlined />}>更多</Button>
+              </Dropdown>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 

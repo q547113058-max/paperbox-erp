@@ -462,3 +462,43 @@ P0 旧系统核心业务页复刻缺口：已全部补完。
 ### 建议下一档
 
 P1 修复优先级：先修 `/deliveries` 的 `ID:null` 和所有表格 `nowrap/Tooltip`，再把危险/低频操作收纳到「更多」。
+
+---
+
+## P1 回归问题修复（2026-06-10）
+
+### 修复项
+
+1. 发货管理 `ID:null`
+   - 表格关联订单/客户兜底从 `ID:${id}` 改为 `未关联`。
+   - 详情弹窗、CSV 导出同步改为友好兜底。
+   - 验证：页面不再出现 `ID:null`。
+
+2. 采购管理单号和操作列
+   - 采购单号列加宽并使用 nowrap + Tooltip。
+   - 操作列从 6~7 个按钮收纳为主操作 + `更多`。
+   - 删除改为 Modal.confirm 二次确认，避免 Dropdown 中嵌套 Popconfirm 的交互不稳定。
+
+3. 订单管理金额和操作列
+   - 总金额/成本/利润列统一 nowrap。
+   - 打印/删除收纳到 `更多`。
+
+4. 应收/应付财务页
+   - 单号列 nowrap + Tooltip。
+   - 到期日列加宽到 130 并 nowrap。
+   - 冲正/编辑/删除收纳到 `更多`。
+
+### 验收
+
+- `npx tsc --noEmit -p apps/web/tsconfig.json`：PASS
+- `antd-icon-import-audit.py apps/web/src`：PASS
+- `npx vite build`：PASS
+- `nginx -t && nginx -s reload`：PASS
+- 浏览器 console：0 errors / 0 messages
+- browser_vision：采购 / 发货 / 应收 P1 修复 PASS
+
+### 剩余 P2
+
+- 发货管理待发货行仍有 5 个操作按钮，可后续同样收纳为 `详情 / 发货 / 更多`。
+- 财务页 `更多` 菜单靠右边缘，窄屏时可再调 dropdown placement 或操作列 padding。
+

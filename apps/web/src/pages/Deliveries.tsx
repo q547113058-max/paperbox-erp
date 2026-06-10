@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Table, Input, Button, Space, Tag, message, Modal, Form, InputNumber,
-  Select, DatePicker, Popconfirm, Row, Col, Divider, Card, Statistic,
+  Select, DatePicker, Popconfirm, Row, Col, Divider, Card, Statistic, Tooltip,
 } from 'antd';
 import {
   PlusOutlined, EyeOutlined, CarOutlined, CheckCircleOutlined,
@@ -85,15 +85,15 @@ export default function Deliveries() {
   useEffect(() => { fetchAll(); }, []);
 
   const orderMap = useMemo(
-    () => Object.fromEntries(orders.map((o) => [o.id, o.order_no || `ID:${o.id}`])),
+    () => Object.fromEntries(orders.map((o) => [o.id, o.order_no || `未关联`])),
     [orders]
   );
   const customerMap = useMemo(
-    () => Object.fromEntries(customers.map((c) => [c.id, c.name || c.contact || `ID:${c.id}`])),
+    () => Object.fromEntries(customers.map((c) => [c.id, c.name || c.contact || `未关联`])),
     [customers]
   );
   const productMap = useMemo(
-    () => Object.fromEntries(products.map((p) => [p.id, p.name || p.code || `ID:${p.id}`])),
+    () => Object.fromEntries(products.map((p) => [p.id, p.name || p.code || `未关联`])),
     [products]
   );
 
@@ -214,8 +214,8 @@ export default function Deliveries() {
     const headers = ['发货单号', '关联订单', '客户', '送货人', '送货地址', '状态', '签收', '送货日期'];
     const rows = filtered.map((d) => [
       d.delivery_no || `#${d.id}`,
-      orderMap[d.order_id] || d.order_id,
-      customerMap[d.customer_id] || d.customer_id,
+      orderMap[d.order_id] || '未关联',
+      customerMap[d.customer_id] || '未关联',
       d.delivery_person || '',
       d.address || '',
       d.status,
@@ -317,12 +317,12 @@ export default function Deliveries() {
   // ========== 表格列定义 ==========
 
   const columns = [
-    { title: '发货单号', dataIndex: 'delivery_no', key: 'delivery_no', width: 160, fixed: 'left' as const,
-      render: (v: string | null, r: Delivery) => v ? v : <Tag color="orange">TMP#{r.id}</Tag> },
+    { title: '发货单号', dataIndex: 'delivery_no', key: 'delivery_no', width: 180, fixed: 'left' as const,
+      render: (v: string | null, r: Delivery) => v ? <Tooltip title={v}><span style={{ whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{v}</span></Tooltip> : <Tag color="orange">TMP#{r.id}</Tag> },
     { title: '关联订单', dataIndex: 'order_id', key: 'order_id', width: 150,
-      render: (id: number) => orderMap[id] || `ID:${id}` },
+      render: (id: number) => orderMap[id] || `未关联` },
     { title: '客户', dataIndex: 'customer_id', key: 'customer_id', width: 120,
-      render: (id: number) => customerMap[id] || `ID:${id}` },
+      render: (id: number) => customerMap[id] || `未关联` },
     { title: '送货人', dataIndex: 'delivery_person', key: 'delivery_person', width: 100,
       render: (v: string) => v || '-' },
     { title: '送货地址', dataIndex: 'address', key: 'address', width: 200, ellipsis: true,
@@ -614,8 +614,8 @@ export default function Deliveries() {
           <>
             <Row gutter={[16, 8]}>
               <Col span={8}><b>发货单号：</b>{detail.delivery_no || `#${detail.id}`}</Col>
-              <Col span={8}><b>关联订单：</b>{orderMap[detail.order_id] || `ID:${detail.order_id}`}</Col>
-              <Col span={8}><b>客户：</b>{customerMap[detail.customer_id] || `ID:${detail.customer_id}`}</Col>
+              <Col span={8}><b>关联订单：</b>{orderMap[detail.order_id] || '未关联'}</Col>
+              <Col span={8}><b>客户：</b>{customerMap[detail.customer_id] || '未关联'}</Col>
               <Col span={8}><b>状态：</b><Tag color={getStatusColor(detail.status)}>{detail.status}</Tag></Col>
               <Col span={8}><b>签收：</b>{detail.signed === 1
                 ? <Tag color="green">已签收 {detail.signed_at || ''}</Tag>

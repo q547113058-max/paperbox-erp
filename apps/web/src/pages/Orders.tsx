@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Input, Button, Space, Tag, Popconfirm, message, Modal, Form, InputNumber, Select, DatePicker, Row, Col, Divider, Card, Statistic } from 'antd';
+import { Table, Input, Button, Space, Tag, message, Modal, Form, InputNumber, Select, DatePicker, Row, Col, Divider, Card, Statistic, Tooltip, Dropdown } from 'antd';
 import {
   EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined,
   SearchOutlined, DownloadOutlined, PrinterOutlined, CheckOutlined, StopOutlined,
-  CarOutlined, ToolOutlined, InboxOutlined, ArrowRightOutlined,
+  CarOutlined, ToolOutlined, InboxOutlined, ArrowRightOutlined, MoreOutlined,
 } from '@ant-design/icons';
 import type { Order, Customer, Product } from '../types/api';
 import api from '../utils/axios';
@@ -234,7 +234,7 @@ export default function Orders() {
   };
 
   const columns = [
-    { title: '订单号', dataIndex: 'order_no', key: 'order_no', width: 130, fixed: 'left' as const, render: (v: string | null, r: Order) => v ? v : <Tag color="orange">TMP-{r.id}</Tag> },
+    { title: '订单号', dataIndex: 'order_no', key: 'order_no', width: 145, fixed: 'left' as const, render: (v: string | null, r: Order) => v ? <Tooltip title={v}><span style={{ whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{v}</span></Tooltip> : <Tag color="orange">TMP-{r.id}</Tag> },
     { title: '客户', dataIndex: 'customer_id', key: 'customer', width: 120, render: (id: number) => customerMap[id] || `ID:${id}` },
     { title: '业务员', dataIndex: 'salesman_id', key: 'salesman', width: 80, render: (v: number) => v ? `ID:${v}` : '-' },
     { title: '状态', dataIndex: 'status', key: 'status', width: 110, render: (s: string, r: Order) => (
@@ -247,33 +247,47 @@ export default function Orders() {
         />
       ),
     },
-    { title: '总金额', dataIndex: 'total_amount', key: 'total_amount', width: 110, align: 'right' as const, render: (v: number) => <span style={{ fontWeight: 600, color: Number(v) > 0 ? '#cf1322' : undefined }}>¥{Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span> },
-    { title: '成本', dataIndex: 'total_cost', key: 'total_cost', width: 100, align: 'right' as const, render: (v: number) => `¥${Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}` },
-    { title: '利润', dataIndex: 'profit', key: 'profit', width: 100, align: 'right' as const, render: (v: number) => <span style={{ color: Number(v) >= 0 ? '#52c41a' : '#cf1322' }}>¥{Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span> },
+    { title: '总金额', dataIndex: 'total_amount', key: 'total_amount', width: 120, align: 'right' as const, render: (v: number) => <span style={{ fontWeight: 600, color: Number(v) > 0 ? '#cf1322' : undefined, whiteSpace: 'nowrap' }}>¥{Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span> },
+    { title: '成本', dataIndex: 'total_cost', key: 'total_cost', width: 110, align: 'right' as const, render: (v: number) => <span style={{ whiteSpace: 'nowrap' }}>¥{Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span> },
+    { title: '利润', dataIndex: 'profit', key: 'profit', width: 110, align: 'right' as const, render: (v: number) => <span style={{ color: Number(v) >= 0 ? '#52c41a' : '#cf1322', whiteSpace: 'nowrap' }}>¥{Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span> },
     { title: '客户单号', dataIndex: 'customer_order_no', key: 'customer_order_no', width: 110, render: (v: string) => v || '-' },
     { title: '交货日期', dataIndex: 'delivery_date', key: 'delivery_date', width: 110, render: (v: string) => v || '-' },
     { title: '订单日期', dataIndex: 'order_date', key: 'order_date', width: 110, render: (v: string) => v || '-' },
     { title: '创建日期', dataIndex: 'created_at', key: 'created_at', width: 110, render: (v: string) => v?.split('T')[0] || v },
     {
-      title: '操作', key: 'action', width: 320, fixed: 'right' as const,
-      render: (_: any, r: Order) => (
-        <Space size={4} wrap>
-          <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => handleViewDetail(r)}>详情</Button>
-          <Button size="small" type="link" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
-          {r.status === '已确认' && (
-            <Button size="small" type="link" icon={<ToolOutlined />} onClick={() => handleGenerateWorkOrder(r)}>生成工单</Button>
-          )}
-          {r.status === '已完成' || r.status === '已取消' ? null : (
-            <Button size="small" type="link" icon={<CarOutlined />} onClick={() => handleGenerateDelivery(r)}>生成发货</Button>
-          )}
-          {r.status !== '已完成' && r.status !== '已取消' && (
-            <Button size="small" type="link" icon={<PrinterOutlined />} onClick={() => message.info('打印功能：打开 /api/print/order/' + r.id)}>打印</Button>
-          )}
-          <Popconfirm title="确认删除？" onConfirm={() => handleDelete(r.id)}>
-            <Button size="small" type="link" danger icon={<DeleteOutlined />}>删除</Button>
-          </Popconfirm>
-        </Space>
-      ),
+      title: '操作', key: 'action', width: 230, fixed: 'right' as const,
+      render: (_: any, r: Order) => {
+        const moreItems = [
+          ...(r.status !== '已完成' && r.status !== '已取消' ? [{ key: 'print', label: '打印', icon: <PrinterOutlined /> }] : []),
+          { key: 'delete', label: '删除', icon: <DeleteOutlined />, danger: true },
+        ];
+        return (
+          <Space size={4}>
+            <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => handleViewDetail(r)}>详情</Button>
+            <Button size="small" type="link" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
+            {r.status === '已确认' && (
+              <Button size="small" type="link" icon={<ToolOutlined />} onClick={() => handleGenerateWorkOrder(r)}>工单</Button>
+            )}
+            {r.status !== '已完成' && r.status !== '已取消' && (
+              <Button size="small" type="link" icon={<CarOutlined />} onClick={() => handleGenerateDelivery(r)}>发货</Button>
+            )}
+            <Dropdown
+              trigger={['click']}
+              menu={{
+                items: moreItems,
+                onClick: ({ key }) => {
+                  if (key === 'print') message.info('打印功能：打开 /api/print/order/' + r.id);
+                  if (key === 'delete') {
+                    Modal.confirm({ title: '确认删除？', okText: '删除', cancelText: '取消', okButtonProps: { danger: true }, onOk: () => handleDelete(r.id) });
+                  }
+                },
+              }}
+            >
+              <Button size="small" type="link" icon={<MoreOutlined />}>更多</Button>
+            </Dropdown>
+          </Space>
+        );
+      },
     },
   ];
 

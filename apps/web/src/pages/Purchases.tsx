@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Table, Input, Button, Space, Tag, message, Modal, Form, InputNumber,
-  Select, DatePicker, Popconfirm, Row, Col, Divider, Card, Statistic,
+  Select, DatePicker, Row, Col, Divider, Card, Statistic, Tooltip, Dropdown,
 } from 'antd';
 import {
   PlusOutlined, EyeOutlined, CheckOutlined, InboxOutlined,
   PrinterOutlined, DownloadOutlined, StopOutlined, EditOutlined,
-  DeleteOutlined, SearchOutlined, ReloadOutlined,
+  DeleteOutlined, SearchOutlined, ReloadOutlined, MoreOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Purchase, PurchaseItem, Supplier } from '../types/api';
@@ -322,8 +322,8 @@ export default function Purchases() {
   // ========== 表格列定义 ==========
 
   const columns = [
-    { title: '采购单号', dataIndex: 'purchase_no', key: 'purchase_no', width: 150, fixed: 'left' as const,
-      render: (v: string | null, r: Purchase) => v ? v : <Tag color="orange">TMP-{r.id}</Tag> },
+    { title: '采购单号', dataIndex: 'purchase_no', key: 'purchase_no', width: 190, fixed: 'left' as const,
+      render: (v: string | null, r: Purchase) => v ? <Tooltip title={v}><span style={{ whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{v}</span></Tooltip> : <Tag color="orange">TMP-{r.id}</Tag> },
     { title: '供应商', dataIndex: 'supplier_id', key: 'supplier_id', width: 130,
       render: (id: number) => supplierMap[id] || `ID:${id}` },
     { title: '总金额', dataIndex: 'total_amount', key: 'total_amount', width: 110, align: 'right' as const,
@@ -338,33 +338,46 @@ export default function Purchases() {
     { title: '创建日期', dataIndex: 'created_at', key: 'created_at', width: 110,
       render: (v: string) => (v || '').split('T')[0] || v || '-' },
     {
-      title: '操作', key: 'action', width: 280, fixed: 'right' as const,
-      render: (_: any, r: Purchase) => (
-        <Space size={4} wrap>
-          <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => handleViewDetail(r)}>详情</Button>
-          {r.status === '待审批' && (
-            <>
+      title: '操作', key: 'action', width: 210, fixed: 'right' as const,
+      render: (_: any, r: Purchase) => {
+        const moreItems = [
+          ...(r.status !== '已入库' && r.status !== '已取消' ? [{ key: 'edit', label: '编辑', icon: <EditOutlined /> }] : []),
+          { key: 'print', label: '打印', icon: <PrinterOutlined /> },
+          ...(r.status === '待审批' ? [{ key: 'reject', label: '驳回', danger: true }] : []),
+          ...(r.status === '待审批' ? [{ key: 'delete', label: '删除', icon: <DeleteOutlined />, danger: true }] : []),
+          ...(r.status !== '已入库' && r.status !== '已取消' ? [{ key: 'cancel', label: '取消', icon: <StopOutlined />, danger: true }] : []),
+        ];
+        return (
+          <Space size={4}>
+            <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => handleViewDetail(r)}>详情</Button>
+            {r.status === '待审批' && (
               <Button size="small" type="link" icon={<CheckOutlined />} onClick={() => handleApprove(r, true)}>审批</Button>
-              <Button size="small" type="link" danger onClick={() => handleApprove(r, false)}>驳回</Button>
-            </>
-          )}
-          {(r.status === '待审批' || r.status === '已审批') && (
-            <Button size="small" type="link" icon={<InboxOutlined />} onClick={() => handleReceive(r)}>入库</Button>
-          )}
-          <Button size="small" type="link" icon={<PrinterOutlined />} onClick={() => handlePrint(r)}>打印</Button>
-          {r.status !== '已入库' && r.status !== '已取消' && (
-            <Button size="small" type="link" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
-          )}
-          {r.status === '待审批' && (
-            <Popconfirm title="确认删除？" okText="删除" cancelText="取消" onConfirm={() => handleDelete(r)}>
-              <Button size="small" type="link" danger icon={<DeleteOutlined />}>删除</Button>
-            </Popconfirm>
-          )}
-          {r.status !== '已入库' && r.status !== '已取消' && (
-            <Button size="small" type="link" danger icon={<StopOutlined />} onClick={() => handleCancel(r)}>取消</Button>
-          )}
-        </Space>
-      ),
+            )}
+            {(r.status === '待审批' || r.status === '已审批') && (
+              <Button size="small" type="link" icon={<InboxOutlined />} onClick={() => handleReceive(r)}>入库</Button>
+            )}
+            {moreItems.length > 0 && (
+              <Dropdown
+                trigger={['click']}
+                menu={{
+                  items: moreItems,
+                  onClick: ({ key }) => {
+                    if (key === 'edit') handleEdit(r);
+                    if (key === 'print') handlePrint(r);
+                    if (key === 'reject') handleApprove(r, false);
+                    if (key === 'cancel') handleCancel(r);
+                    if (key === 'delete') {
+                      Modal.confirm({ title: '确认删除？', okText: '删除', cancelText: '取消', okButtonProps: { danger: true }, onOk: () => handleDelete(r) });
+                    }
+                  },
+                }}
+              >
+                <Button size="small" type="link" icon={<MoreOutlined />}>更多</Button>
+              </Dropdown>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
