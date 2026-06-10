@@ -146,18 +146,69 @@ export interface WarehouseEntry {
 
 export interface Delivery {
   id: number;
+  delivery_no: string | null;
   order_id: number;
+  customer_id: number;
+  work_order_id: number;
+  work_order_completed_at: string;
   status: string;
   delivery_date: string;
-  created_at?: string;
-  delivery_no?: string;
-  customer_id?: number;
-  delivery_person?: string;
-  delivery_time?: string;
-  address?: string;
-  signed?: number;
-  signed_at?: string;
-  work_order_id?: number;
+  signed: number;
+  signed_at: string;
+  remark: string;
+  created_at: string;
+  delivery_person: string;
+  delivery_time: string;
+  warehouse_entry_id: number;
+  address: string;
+  work_order_nos: string;
+}
+
+export interface DeliveryItem {
+  id: number;
+  delivery_id: number;
+  product_id: number;
+  quantity: number;
+  warehouse_entry_id: number;
+  unit_price?: number;
+  remark?: string;
+}
+
+export interface WorkOrder {
+  id: number;
+  work_order_no: string | null;
+  order_id: number;
+  product_id: number;
+  quantity: number;
+  status: string;
+  worker: string;
+  created_at: string;
+  completed_at: string;
+  start_date: string;
+  end_date: string;
+  plan_qty: number;
+  completed_qty: number;
+  progress: number;
+  material: string;
+  box_type: string;
+  process_name: string;
+  remark: string;
+}
+
+export interface OrderItem {
+  id: number;
+  order_id: number;
+  product_id: number;
+  product_name: string;
+  product_code: string;
+  spec: string;
+  quantity: number;
+  unit_price: number;
+  amount: number;
+  delivered_qty: number;
+  customer_product_code: string;
+  delivery_date: string;
+  remark: string;
 }
 
 export interface FinanceRecord {

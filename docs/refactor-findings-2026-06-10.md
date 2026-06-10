@@ -3,10 +3,12 @@
 ## 项目信息
 
 - 项目：纸箱 ERP v2（NestJS + React + AntD）
-- 任务：P0 业务页补全 — Purchases.tsx
+- 任务：P0 业务页批量补全 — Purchases.tsx + Deliveries.tsx
 - 日期：2026-06-10
 
-## P0 已修复：Purchases.tsx 只读问题
+---
+
+## P0-1 已修复：Purchases.tsx 只读问题（已完成）
 
 ### 现象
 - 旧代码（44 行）只调用 `GET /api/purchases`，其他 10 个后端端点（审批/收货/取消/打印/创建/更新/删除/明细/生成单号/按单号查）全部无前端入口
@@ -117,5 +119,122 @@ POST   /api/purchases/:id/update-no    更新单号（合并打印）
 | A | 继续 P0-2 Deliveries（按相同模式，1-2 小时搞定）|
 | B | 先做视觉打磨（修 P1 五项，每项 5-10 分钟）|
 | C | 跳到 P0-3 Orders 详情（最复杂，需要做产品明细行）|
+| D | 暂停，先把这次 P0 推到正式服 |
+| E | 暂停，等用户反馈 |
+
+
+---
+
+## P0-2 已修复：Deliveries.tsx 只读问题（已完成）
+
+### 现象
+- 旧代码（41 行）只调用 `GET /api/deliveries`，5 列只读表格
+- 其他 10 个后端端点（创建/更新/删除/发货/签收/从订单生成/从工单生成/批量发货/详情/按单号查）全部无前端入口
+- 业务流（待发货 → 已发货 → 已签收）完全无法推进
+- 之前 refactor-findings-2026-06-09 已记录此问题
+
+### 修复
+**Deliveries.tsx 41 → 665 行**：
+
+| 模块 | 旧 | 新 |
+|------|---|---|
+| KPI 卡片 | 0 | 5 个（总发货单/待发货/已发货/已签收/签收率%）|
+| 搜索/筛选 | 1（搜索）| 3（搜索/状态/客户）+ 清除按钮 |
+| 表格列 | 5 | 11（发货单号/关联订单/客户/送货人/送货地址/状态/签收/送货日期/送货时间/创建日期/操作）|
+| 操作按钮 | 0 | 6（详情/发货/签收/打印/编辑/删除）|
+| 业务弹窗 | 0 | 3（新建/编辑/详情）|
+| 导出 | 0 | CSV（带 BOM）|
+| 业务闭环 | 无 | 待发货 → 发货 → 已发货 → 签收 → 已签收 |
+| 状态色 | 硬编码 | 调用 utils/statusColor.ts |
+| API 端点 | 1/11 | 11/11 全部接入 |
+
+### 业务闭环（service 真实流转）
+
+| 操作 | 入口 | 后端流转 | 状态/数据变化 |
+|------|------|---------|-------------|
+| 新建 | 新建发货单 Modal | POST /from-order | 选订单 + 明细 → 自动扣产品库存 |
+| 发货 | 行内 [发货]（待发货）| PUT /:id/ship | 待发货 → 已发货（自动更新 order_item.delivered_qty）|
+| 签收 | 行内 [签收]（已发货）| POST /:id/sign | 已发货 → 已签收（判断订单全部签收 → 更新订单状态为已发货）|
+| 打印 | 行内 [打印] | 跳 /api/print/delivery/:id | 任何状态 |
+| 编辑 | 行内 [编辑]（限待发货）| PUT /:id | 限非已签收/已发货 |
+| 删除 | 行内 [删除]（限待发货）| DELETE /:id | 物理删除 |
+
+### types/api.ts 扩展
+
+- `Delivery` 14 字段（缺 6 个 → 完整 17 字段）
+- `DeliveryItem` interface（5 字段）
+- `WorkOrder` interface（17 字段）
+- `OrderItem` interface（13 字段）
+
+### 验证
+
+- typecheck: `npx tsc --noEmit -p apps/web/tsconfig.json` → 0 errors
+- vite build: `npx vite build` → ✓ 7.70s, Deliveries chunk 16.0 kB
+- 部署: nginx reload OK
+- 浏览器 http://193.112.246.85:3003/deliveries: 7 条发货单全部加载
+- KPI 实时：7 / 待发货 4 / 已发货 2 / 已签收 1 / 签收率 14%
+- 操作按钮按状态动态（待发货 5 个，已发货 3 个，已签收 2 个）
+- 详情弹窗：11 字段基本信息 + 5 列明细表（含合计行：数量小计 + 金额小计 ¥xxx 红色高亮）
+- 新建弹窗：3 字段顶部 + 备注 + 系统提示「自动从产品库存扣减」+ 可增删明细行
+- 编辑弹窗：4 字段（送货人/送货日期/送货地址/备注）
+- 浏览器 console: 0 errors, 0 messages
+
+### 设计标准（§04 七条 UI 验收）
+
+| # | 检查项 | 结论 | 证据 |
+|---|--------|------|------|
+| 1 | 品牌色一致 | ✅ PASS | 主题色 #2c5282 钢蓝贯穿 |
+| 2 | 状态色映射 | ✅ PASS | getStatusColor()，待发货=橙 / 已发货=青 / 已签收=绿 |
+| 3 | 表格空态 | ✅ PASS | TableEmptyCell，自动判断 primary/no-match |
+| 4 | 操作按钮状态条件渲染 | ✅ PASS | 6 个按钮按 status 动态显示 |
+| 5 | 数字列右对齐 | ✅ PASS | 数量/金额/小计 align: 'right' |
+| 6 | scroll.x 防横向溢出 | ✅ PASS | scroll={{ x: 1600 }} + fixed: 'right' 操作列 |
+| 7 | 不像默认模板 | ✅ PASS | 5 KPI 顶 3px 彩色边条 + 业务规则提示（自动扣库存）|
+
+### 视觉评估（browser_vision 8.5/10）
+
+**优点：**
+- KPI 5 卡差异化配色（深蓝/橙/青/绿/深蓝），语义编码正确
+- 状态徽标 + 操作按钮动态显示 严谨
+- 业务规则提示（"系统将自动从产品库存扣减发货数量"）专业
+- 详情弹窗 footer 双按钮（打印主操作 + 关闭）
+- 客户筛选用 showSearch 模糊搜索
+
+**改进点（P1）：**
+- 表格缺斑马纹 + 行 hover
+- KPI 缺趋势对比（近 7 天 vs 前 7 天）
+- 顶部缺批量操作栏（勾选 + 批量打印/导出）
+- 数据空值「ID:null」「-」未灰显统一处理
+
+### 教训 / 改进点
+
+- **TypeScript 严格性**：`Table.Summary.Cell` 不支持 `style` prop → 用 `<span style={...}>` wrap
+- **类型定义重复**：之前在 types/api.ts line 11 已有 `Product` interface，加新 Delivery/Item 块时差点重复 → 删掉新加的 Product 解决
+- **N40 (AntD 图标 import)**：所有图标（Eye/Car/CheckCircle/Printer/Download/Stop/Edit/Delete/Search/Reload/Thunderbolt/Plus）都在顶部 import 完整
+- **N37 (TSX 多处 patch)**：用 write_file 整文件重写，无 array 重复
+- **N42 (TableEmptyCell isDataEmpty)**：用 data.length === 0 正确
+
+### 累计 P0 进展
+
+| Page | 行数 | 业务闭环 | API 接入 | 状态 |
+|------|------|---------|---------|------|
+| Purchases | 44→672 | ✅ | 11/11 | ✅ 完成 |
+| Deliveries | 41→665 | ✅ | 11/11 | ✅ 完成 |
+| Orders | 140（待改）| ❌ 缺详情+产品明细 | 5/5 | ⏳ P0-3 |
+| Receivables | 0（待建）| ❌ | 0/0 | ⏳ P0-4 |
+| Payables | 0（待建）| ❌ | 0/0 | ⏳ P0-4 |
+
+## 下一步 P0 阻塞
+
+- [ ] P0-3: Orders.tsx 详情弹窗 + 产品明细行（最复杂，涉及子表）
+- [ ] P0-4: Receivables.tsx + Payables.tsx 2 个新 page（应收应付，旧版有，新版 0 个）
+
+## 5 档投票
+
+| 档 | 建议 |
+|----|------|
+| A | 继续 P0-3 Orders 详情弹窗 + 产品明细行（最复杂，预计 2-3 小时）|
+| B | 先做视觉打磨（修 P1 五项 + Deliveries 三项，每项 5-10 分钟）|
+| C | 跳到 P0-4 Receivables/Payables 2 个新 page（业务闭环必要）|
 | D | 暂停，先把这次 P0 推到正式服 |
 | E | 暂停，等用户反馈 |
