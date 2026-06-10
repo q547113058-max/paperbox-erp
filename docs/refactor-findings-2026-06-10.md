@@ -645,3 +645,45 @@ P2 展示差异扫描发现 Dashboard 和 Products 是差异最大的两个页�
 - 旧系统 Dashboard 还有全局搜索框（跨模块搜索），新版暂未补（需要新 API）
 - 旧系统 Products 还有印件管理/刀模管理/客户产品编码等弹窗，属于更深层功能增强
 
+---
+
+## P2 WorkOrders / OutsourcingOrders / Customers 差异补齐（2026-06-10 晚间）
+
+### 背景
+
+P2 展示差异扫描发现 3 个核心业务页差异仍大，继续补齐。
+
+### WorkOrders 改动
+
+- 196→512 行
+- 18 列含「完成进度」Progress +「已发/待发数量」+「进仓码」+可复制「工单号」
+- 详情 Modal 4 区域 + 打印按钮
+- 全部危险操作用 Modal.confirm 包裹
+
+### OutsourcingOrders 改动
+
+- 195→250 行
+- 19 列含工单号/客户/完成数/已收货/上机尺寸/上机数量/尺寸结构/印刷颜色/计划日期
+- 详情 Modal 4 区域 + 打印按钮
+- 客户名从 customers API 获取
+
+### Customers 改动
+
+- 101→200 行
+- 13 列含账期(天)/结算方式/含税Tag/返点/信用额度/状态
+- 详情 Modal 基本信息/财务信息 2 区域
+- 新建/编辑 Modal 800px，加状态/账期(天)/结算方式/含税Switch/信用额度
+- 删除改 Modal.confirm
+- types/api.ts Customer 加 4 字段：payment_days/settlement_type/credit_limit/payment_cycle 类型修正
+
+### 验收
+
+- tsc / 图标审计 / vite build / nginx reload：PASS
+- 3 页面表格全部正常
+- console 0 errors
+
+### 注意
+
+- WorkOrders 后端 /api/print/work_order/:id 端点不存在，前端按需求实现打开逻辑，后续需后端补端点
+- 旧版 Customers 还有"添加材料类型"按钮（基础资料弹窗），新版未补
+

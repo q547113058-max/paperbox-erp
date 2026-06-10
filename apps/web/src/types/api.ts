@@ -86,8 +86,11 @@ export interface Customer {
   address: string;
   salesman: string;
   payment_cycle: string;
+  payment_days: number;
+  settlement_type: string;
   tax_included: number;
   rebate_percent: number;
+  credit_limit: number;
   status: string;
   remark: string;
   created_at?: string;
