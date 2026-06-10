@@ -341,3 +341,92 @@ POST   /api/purchases/:id/update-no    更新单号（合并打印）
 | C | 先全链路回归（Orders→WorkOrders→Purchases→Deliveries 浏览器 11 页）|
 | D | 暂停，先同步正式服 |
 | E | 暂停，等用户反馈 |
+
+
+---
+
+## P0-4 已修复：Receivables + Payables 新页面缺失（已完成）
+
+### 现象
+- 旧系统具备应收/应付财务跟踪能力，新版前端只有 `Finance.tsx` 39 行通用只读列表。
+- 前端没有独立 `/receivables` 与 `/payables` 页面，菜单也没有入口。
+- 后端 `finance_records` 已有完整基础能力：列表、详情、新建、更新、删除、结清、冲正、汇总，但前端未充分接入。
+
+### 修复
+
+新增/改造文件：
+
+| 文件 | 说明 |
+|------|------|
+| `apps/web/src/pages/FinanceRecordsPage.tsx` | 应收/应付共用完整业务页（约 520 行） |
+| `apps/web/src/pages/Receivables.tsx` | 应收页面配置封装 |
+| `apps/web/src/pages/Payables.tsx` | 应付页面配置封装 |
+| `apps/web/src/pages/Finance.tsx` | 从 39 行只读表改为财务总览 + 应收/应付入口 |
+| `apps/web/src/App.tsx` | 新增 `/receivables` `/payables` 路由 |
+| `apps/web/src/components/Layout.tsx` | 菜单新增「应收」「应付」，boss/finance 权限放行 |
+| `apps/web/src/types/api.ts` | FinanceRecord interface 补全 15 字段 |
+| `apps/web/src/utils/statusColor.ts` | 新增 未结清/已结清/已冲正 状态色 |
+
+### 新页面能力
+
+`/receivables` 应收管理：
+- KPI 5 卡：总应收单 / 未结清 / 已结清 / 逾期 / 未结清金额
+- 3 筛选：状态 / 账期 / 类别 + 搜索 + 清除筛选
+- 12 列表格：单号、来源、客户、金额、状态、到期日、账期、类别、说明、结清时间、创建时间、操作
+- 操作：详情 / 结清 / 冲正 / 编辑 / 删除
+- 新建/编辑 Modal：关联单号、来源类型、客户、金额、状态、到期日、账期、类别、结清时间、说明
+- 详情 Modal：15 字段 + 业务提示
+- CSV 导出（带 BOM）
+
+`/payables` 应付管理：
+- 与应收同构，配置为供应商/委外商、采购货款/委外加工费/运费/工资/其他应付
+- 支持空态 `TableEmptyCell`：无数据时显示「新建应付」按钮
+
+`/finance` 财务总览：
+- 4 KPI：应收总额 / 应付总额 / 收入 / 支出
+- 应收/应付入口卡片
+- 最近 8 条财务记录
+
+### 接口细节
+
+后端 controller 当前实际路径是 `@Controller('finance_records')`，但旧注释/旧前端曾写 `/finance-records`。
+前端实现了双路径 fallback：
+- 首选 `/api/finance_records`
+- 失败后 fallback `/api/finance-records`
+
+避免命名不一致导致财务页空白。
+
+### 验证
+
+- typecheck：`npx tsc --noEmit -p apps/web/tsconfig.json` → 0 errors
+- AntD 图标审计：PASS
+- vite build：7.61s
+- nginx reload：OK
+- 浏览器 `/receivables`：18 条应收加载；KPI 18/16/2/6/¥10,126.00；详情弹窗正常；新建弹窗字段完整，保存/取消 footer DOM 可见
+- 浏览器 `/payables`：0 条应付加载；空态正常；新建应付弹窗字段完整，保存/取消 footer DOM 可见
+- 浏览器 `/finance`：财务总览正常；应收总额 ¥10,157.00，应付总额 ¥0.00；入口按钮正常
+- 浏览器 console：0 errors / 0 messages
+
+### 设计标准（§04 七条 UI 验收）
+
+| # | 检查项 | 结论 |
+|---|--------|------|
+| 1 | 品牌色一致 | ✅ PASS |
+| 2 | 状态色映射 | ✅ PASS：未结清 orange / 已结清 green / 已冲正 red |
+| 3 | 表格空态 | ✅ PASS：Payables 空态有新建按钮 |
+| 4 | 操作按钮状态条件渲染 | ✅ PASS：已结清不显示结清，已冲正不显示编辑/冲正 |
+| 5 | 数字列右对齐 | ✅ PASS：金额列 right + 加粗 |
+| 6 | scroll.x 防横向溢出 | ✅ PASS：主表 `scroll.x=1700` |
+| 7 | 不像默认模板 | ✅ PASS：KPI + 筛选 + 详情 + 业务提示 + 总览入口 |
+
+### P0 总结
+
+| Page | 原状态 | 新状态 |
+|------|--------|--------|
+| Purchases | 44 行只读 | ✅ 672 行完整采购闭环 |
+| Deliveries | 41 行只读 | ✅ 665 行完整发货闭环 |
+| Orders | 140 行缺详情/明细 | ✅ 596 行详情/明细/生成工单/发货 |
+| Receivables | 不存在 | ✅ 新增完整应收管理 |
+| Payables | 不存在 | ✅ 新增完整应付管理 |
+
+P0 旧系统核心业务页复刻缺口：已全部补完。

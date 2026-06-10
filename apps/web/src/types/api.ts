@@ -242,11 +242,21 @@ export interface OrderItem {
 
 export interface FinanceRecord {
   id: number;
-  type: string;
-  amount: number;
+  type: '应收' | '应付' | '收入' | '支出' | string;
   ref_no: string;
-  remark: string;
-  created_at?: string;
+  ref_type: string;
+  party_name: string;
+  amount: number;
+  status: '未结清' | '已结清' | '已冲正' | string;
+  due_date: string;
+  paid_at: string;
+  created_at: string;
+  period_type: string;
+  category: string;
+  description: string;
+  canceled_at: string;
+  canceled_reason: string;
+  canceled_by: string;
 }
 
 // ============ 业务流转相关（Phase 4 新增） ============
