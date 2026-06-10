@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Layout as AntLayout, Menu, Dropdown, Button, Drawer, Breadcrumb, Avatar, Space } from 'antd';
+import { Layout as AntLayout, Menu, Dropdown, Button, Drawer, Breadcrumb, Avatar, Space, Input } from 'antd';
 import {
   DashboardOutlined,
   AppstoreOutlined,
@@ -60,7 +60,6 @@ const allMenuItems = [
   { key: '/customers', icon: <TeamOutlined />, label: '客户' },
   { key: '/suppliers', icon: <TeamOutlined />, label: '供应商' },
   { key: '/personnel', icon: <SettingOutlined />, label: '人员' },
-  { key: '/search', icon: <SearchOutlined />, label: '全局搜索' },
   { key: '/action_logs', icon: <HistoryOutlined />, label: '操作日志' },
   { key: '/settings', icon: <SettingOutlined />, label: '系统设置' },
 ];
@@ -84,6 +83,9 @@ const PAGE_NAMES: Record<string, string> = {
   '/customers': '客户管理',
   '/suppliers': '供应商管理',
   '/personnel': '人员管理',
+  '/search': '全局搜索',
+  '/action_logs': '操作日志',
+  '/settings': '系统设置',
 };
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -237,6 +239,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
               />
             )}
             <Breadcrumb items={breadcrumbItems} />
+          </div>
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '0 24px' }}>
+            <Input.Search
+              placeholder="搜索订单 / 工单 / 产品 / 客户..."
+              allowClear
+              onSearch={(v) => { if (v.trim()) navigate(`/search?q=${encodeURIComponent(v.trim())}`); }}
+              style={{ maxWidth: 420, width: '100%' }}
+              size="middle"
+            />
           </div>
           <Space size={12}>
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">

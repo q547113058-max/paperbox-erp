@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Input, Tabs, Table, Tag, Spin, Empty, Card, Row, Col, Statistic, Space, Button, Tooltip, Progress,
+  Input, Tabs, Table, Tag, Spin, Empty, Card, Button,
 } from 'antd';
 import {
-  SearchOutlined, ReloadOutlined, ClockCircleOutlined, ThunderboltOutlined,
+  SearchOutlined, ReloadOutlined,
   FileTextOutlined, ToolOutlined, CarOutlined, AppstoreOutlined, TeamOutlined, BankOutlined,
-  CheckCircleFilled, CloseCircleFilled, LoadingOutlined,
+  LoadingOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import api from '../utils/axios';
 import { TableEmptyCell } from '../components/TableEmptyCell';
@@ -214,8 +214,10 @@ const initialModuleState = (): ModuleState => ({
 
 export default function GlobalSearch() {
   const navigate = useNavigate();
-  const [keyword, setKeyword] = useState('');
-  const [appliedKeyword, setAppliedKeyword] = useState(''); // 真正触发搜索的关键词（防抖后）
+  const [searchParams] = useSearchParams();
+  const urlQ = searchParams.get('q') || '';
+  const [keyword, setKeyword] = useState(urlQ);
+  const [appliedKeyword, setAppliedKeyword] = useState(urlQ); // 真正触发搜索的关键词（防抖后）
   const [activeTab, setActiveTab] = useState<ModuleKey>('orders');
   const [states, setStates] = useState<Record<ModuleKey, ModuleState>>(() => {
     const o = {} as Record<ModuleKey, ModuleState>;
@@ -315,15 +317,8 @@ export default function GlobalSearch() {
   // KPI 统计
   const kpi = useMemo(() => {
     const totalResults = MODULES.reduce((sum, m) => sum + (filteredByModule[m.key]?.total || 0), 0);
-    const loadedModules = MODULES.filter((m) => !states[m.key].loading).length;
-    const totalElapsed = MODULES.reduce((sum, m) => sum + (states[m.key].elapsed || 0), 0);
-    return {
-      loadedModules,
-      totalModules: MODULES.length,
-      totalResults,
-      totalElapsed,
-    };
-  }, [filteredByModule, states]);
+    return { totalResults };
+  }, [filteredByModule]);
 
   const handleRowClick = (mod: ModuleConfig, row: any) => {
     const id = mod.rowKey(row);
@@ -397,17 +392,7 @@ export default function GlobalSearch() {
   };
 
   return (
-    <div>
-      {/* 顶部标题 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ margin: 0, color: BRAND }}>全局搜索</h2>
-        <Space>
-          <Tooltip title="重新加载所有模块">
-            <Button icon={<ReloadOutlined />} onClick={handleRefresh} loading={globalLoading}>刷新</Button>
-          </Tooltip>
-        </Space>
-      </div>
-
+    <div style={{ maxWidth: 960, margin: '0 auto' }}>
       {/* 搜索框 */}
       <Card
         bordered={false}
@@ -443,89 +428,7 @@ export default function GlobalSearch() {
             }}
           />
         </div>
-        <div style={{ marginTop: 10, color: '#64748b', fontSize: 12, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-          <span>
-            <ThunderboltOutlined style={{ color: BRAND, marginRight: 4 }} />
-            {appliedKeyword
-              ? <>正在搜索：<b style={{ color: BRAND }}>"{appliedKeyword}"</b>（前端本地匹配，无后端搜索端点）</>
-              : <>空查询时显示各模块最近 {RECENT_DAYS} 天创建的前 {RECENT_PER_MODULE_LIMIT} 条记录</>}
-          </span>
-          {appliedKeyword && (
-            <Button size="small" type="link" onClick={handleReset} style={{ padding: 0 }}>清除搜索</Button>
-          )}
-        </div>
       </Card>
-
-      {/* KPI 卡片 */}
-      <Row gutter={12} style={{ marginBottom: 16 }}>
-        <Col xs={12} sm={8} md={6}>
-          <Card size="small" bordered={false} style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-            <Statistic
-              title={<span style={{ fontSize: 12 }}>已加载模块</span>}
-              value={kpi.loadedModules}
-              suffix={<span style={{ fontSize: 12, color: '#94a3b8' }}>/ {kpi.totalModules}</span>}
-              valueStyle={{ color: BRAND, fontSize: 22 }}
-              prefix={kpi.loadedModules === kpi.totalModules
-                ? <CheckCircleFilled style={{ color: '#52c41a' }} />
-                : <LoadingOutlined />}
-            />
-            <Progress
-              percent={Math.round((kpi.loadedModules / kpi.totalModules) * 100)}
-              showInfo={false}
-              strokeColor={BRAND}
-              size="small"
-              style={{ marginTop: 4 }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={8} md={6}>
-          <Card size="small" bordered={false} style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-            <Statistic
-              title={<span style={{ fontSize: 12 }}>搜索结果</span>}
-              value={kpi.totalResults}
-              suffix={<span style={{ fontSize: 12, color: '#94a3b8' }}>条</span>}
-              valueStyle={{ color: kpi.totalResults > 0 ? '#fa8c16' : '#94a3b8', fontSize: 22 }}
-              prefix={<SearchOutlined />}
-            />
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
-              {appliedKeyword ? '本次关键词命中' : `最近 ${RECENT_DAYS} 天合计`}
-            </div>
-          </Card>
-        </Col>
-        <Col xs={12} sm={8} md={6}>
-          <Card size="small" bordered={false} style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-            <Statistic
-              title={<span style={{ fontSize: 12 }}>总加载耗时</span>}
-              value={kpi.totalElapsed}
-              suffix={<span style={{ fontSize: 12, color: '#94a3b8' }}>ms</span>}
-              valueStyle={{ color: kpi.totalElapsed < 500 ? '#52c41a' : kpi.totalElapsed < 1500 ? '#faad14' : '#f5222d', fontSize: 22 }}
-              prefix={<ClockCircleOutlined />}
-            />
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
-              6 个模块并行请求
-            </div>
-          </Card>
-        </Col>
-        <Col xs={12} sm={24} md={6}>
-          <Card size="small" bordered={false} style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>各模块耗时</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {MODULES.map((m) => {
-                const st = states[m.key];
-                return (
-                  <div key={m.key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, lineHeight: '18px' }}>
-                    <span style={{ color: '#475569' }}>{m.label}</span>
-                    <span style={{ color: st.loading ? BRAND : st.error ? '#f5222d' : '#52c41a' }}>
-                      {st.loading ? <LoadingOutlined /> : st.error ? <CloseCircleFilled /> : <CheckCircleFilled />}{' '}
-                      {st.elapsed || 0}ms
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        </Col>
-      </Row>
 
       {/* Tabs 结果区 */}
       <Card
