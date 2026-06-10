@@ -718,3 +718,44 @@ P2 展示差异扫描发现 3 个核心业务页差异仍大，继续补齐。
 - Settings 后端只有 3 字段（id/key/value），如要支持分组、描述等需后端 schema 升级
 - GlobalSearch 是客户端全量模糊匹配，未做后端全文索引；大数据量时性能可能下降
 
+---
+
+## P3 ColorPrints / KnifeDies / Personnel 差异补齐（2026-06-10 晚间）
+
+### ColorPrints 改动
+
+- 新增印刷色 / 表面处理列
+- 新增「保存并新建」连续录入
+- Popconfirm 已移除（原无删除确认弹窗）
+
+### KnifeDies 改动
+
+- 新增详情 Modal（14 字段 + 图片展示）
+- 新增「添加客户」快捷按钮（POST /api/customers）
+- 删除改 Dropdown + Modal.confirm
+
+### Personnel 改动
+
+- 新增详情 Modal（7 字段）
+- 删除改 Dropdown + Modal.confirm
+- 操作列改为 详情 / 编辑 / 更多
+
+### 验收
+
+- tsc / 图标审计 / vite build / nginx reload：PASS
+- 3 页面浏览器验证全部正常
+- console 0 errors
+
+### P0~P3 功能对齐度（此时）
+
+- P0 核心业务页：10/10 已补齐
+- P1 表格打磨：10/10 已修复
+- P2 展示差异：全部已补齐（Dashboard/Products/WorkOrders/OutsourcingOrders/Customers/Settings/ActionLogs/GlobalSearch/Finance/Receivables/Payables）
+- P3 辅助页面：ColorPrints/KnifeDies/Personnel 已补齐
+- 剩余 P3（如 Suppliers/ReconciliationBills/Warehouse/Suppliers）均为已有页面，差异较小，视业务需要决定是否继续
+
+### 注意
+
+- KnifeDies「添加客户」快捷 Modal 只填名称，详细信息需到客户管理页完善
+- ColorPrints 后端无「连续新建」支持，前端保存后清空表单再填（数据实时刷新）
+
