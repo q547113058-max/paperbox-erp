@@ -610,3 +610,38 @@ C：继续查旧系统 P2/P3 展示差异
 - 冲正（handleCancelRecord）使用 window.prompt，无需改动
 - 删除已在 Dropdown menu onClick 中使用 Modal.confirm
 
+---
+
+## P2 Dashboard + Products 差异补齐（2026-06-10 晚间）
+
+### 背景
+
+P2 展示差异扫描发现 Dashboard 和 Products 是差异最大的两个页面。
+
+### Dashboard 改动
+
+- 68→127 行
+- 新增：本月收入/利润 KPI + 最近送货表 + 库存预警表
+- 客户名用 customerMap 从 customers API 获取，兜底"未关联"
+- 签收状态用 signed_at 有值→已签收/无值→未签收
+
+### Products 改动
+
+- 217→402 行
+- 表格 11→17 列（新增盒型/产品类型/成品规格/含税价/不含税价）
+- 新增详情弹窗 800px，4 个 Descriptions 区域覆盖 Product entity 全部 30+ 字段
+- 详情弹窗底部打印按钮
+- 操作列：详情 / 编辑 / 删除
+
+### 验收
+
+- tsc / 图标审计 / vite build / nginx reload：PASS
+- Dashboard：6 KPI + 3 表格正常
+- Products：17 列 + 详情弹窗 4 区域正常
+- console 0 errors
+
+### 注意
+
+- 旧系统 Dashboard 还有全局搜索框（跨模块搜索），新版暂未补（需要新 API）
+- 旧系统 Products 还有印件管理/刀模管理/客户产品编码等弹窗，属于更深层功能增强
+
