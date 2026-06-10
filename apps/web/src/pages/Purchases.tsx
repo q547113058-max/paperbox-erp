@@ -15,10 +15,10 @@ import { TableEmptyCell } from '../components/TableEmptyCell';
 import { getStatusColor } from '../utils/statusColor';
 
 /**
- * 采购管理（P0 业务页）
+ * 委外管理（P0 业务页）
  *
  * 业务闭环：
- *   1. 新建采购单（待审批）
+ *   1. 新建委外单（待审批）
  *   2. 审批（→ 已审批 / 已驳回）
  *   3. 入库（→ 已入库；写车间库存 + 库存流水）
  *   4. 打印（→ 触发 generate-no 替换 TMP 单号为正式 PO）
@@ -52,6 +52,7 @@ const PAPER_TYPE_OPTIONS = [
 export default function Purchases() {
   const [data, setData] = useState<Purchase[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [workOrders, setWorkOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   // 筛选
@@ -75,12 +76,17 @@ export default function Purchases() {
 
   const fetchAll = () => {
     setLoading(true);
-    Promise.all([api.get('/purchases'), api.get('/suppliers').catch(() => ({ data: [] }))])
-      .then(([p, s]) => {
+    Promise.all([
+      api.get('/purchases'),
+      api.get('/suppliers').catch(() => ({ data: [] })),
+      api.get('/work_orders').catch(() => ({ data: [] })),
+    ])
+      .then(([p, s, wo]) => {
         setData(p.data || []);
         setSuppliers(s.data || []);
+        setWorkOrders(wo.data || []);
       })
-      .catch(() => message.error('加载采购单失败'))
+      .catch(() => message.error('加载委外单失败'))
       .finally(() => setLoading(false));
   };
 
@@ -143,7 +149,7 @@ export default function Purchases() {
         delivery_date: v.delivery_date ? v.delivery_date.format('YYYY-MM-DD') : '',
       };
       await api.post('/purchases', payload);
-      message.success('采购单创建成功');
+      message.success('委外单创建成功');
       setCreateOpen(false);
       fetchAll();
     } catch (e: any) {
@@ -212,7 +218,7 @@ export default function Purchases() {
       const result = await new Promise<string>((resolve) => {
         let val = '';
         Modal.confirm({
-          title: `驳回采购单 - ${p.purchase_no || p.id}`,
+          title: `驳回委外单 - ${p.purchase_no || p.id}`,
           content: (
             <Input
               placeholder="驳回原因（必填）"
@@ -270,7 +276,7 @@ export default function Purchases() {
       message.warning('当前筛选无数据可导出');
       return;
     }
-    const headers = ['采购单号', '供应商', '总金额', '状态', '交货日期', '备注', '创建日期'];
+    const headers = ['委外单号', '供应商', '总金额', '状态', '交货日期', '备注', '创建日期'];
     const rows = filtered.map((p) => [
       p.purchase_no || `TMP-${p.id}`,
       supplierMap[p.supplier_id] || p.supplier_id,
@@ -287,7 +293,7 @@ export default function Purchases() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `采购单-${dayjs().format('YYYYMMDD-HHmm')}.csv`;
+    a.download = `委外单-${dayjs().format('YYYYMMDD-HHmm')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     message.success(`已导出 ${filtered.length} 条`);
@@ -298,7 +304,7 @@ export default function Purchases() {
     const result = await new Promise<string>((resolve) => {
       let val = '';
       Modal.confirm({
-        title: `取消采购单 - ${p.purchase_no || p.id}`,
+        title: `取消委外单 - ${p.purchase_no || p.id}`,
         content: (
           <Input placeholder="取消原因（必填）" onChange={(e) => { val = e.target.value; }} />
         ),
@@ -322,10 +328,16 @@ export default function Purchases() {
   // ========== 表格列定义 ==========
 
   const columns = [
-    { title: '采购单号', dataIndex: 'purchase_no', key: 'purchase_no', width: 190, fixed: 'left' as const,
+    { title: '委外单号', dataIndex: 'purchase_no', key: 'purchase_no', width: 190, fixed: 'left' as const,
       render: (v: string | null, r: Purchase) => v ? <Tooltip title={v}><span style={{ whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{v}</span></Tooltip> : <Tag color="orange">TMP-{r.id}</Tag> },
     { title: '供应商', dataIndex: 'supplier_id', key: 'supplier_id', width: 130,
       render: (id: number) => supplierMap[id] || `ID:${id}` },
+    { title: '工单', dataIndex: 'work_order_id', key: 'work_order_id', width: 130,
+      render: (id: number) => {
+        if (!id) return '-';
+        const wo = workOrders.find((w: any) => w.id === id);
+        return wo ? (wo.order_no || wo.prod_no || `工单#${id}`) : `工单#${id}`;
+      } },
     { title: '总金额', dataIndex: 'total_amount', key: 'total_amount', width: 110, align: 'right' as const,
       render: (v: number) => <span style={{ fontWeight: 600, color: Number(v) > 0 ? '#cf1322' : undefined }}>¥{Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span> },
     { title: '状态', dataIndex: 'status', key: 'status', width: 90, align: 'center' as const,
@@ -351,10 +363,10 @@ export default function Purchases() {
           <Space size={4}>
             <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => handleViewDetail(r)}>详情</Button>
             {r.status === '待审批' && (
-              <Button size="small" type="link" icon={<CheckOutlined />} onClick={() => Modal.confirm({ title: '确认审批通过？', content: `采购单 ${r.purchase_no || `#${r.id}`} 将变为已审批`, okText: '通过', cancelText: '取消', onOk: () => handleApprove(r, true) })}>审批</Button>
+              <Button size="small" type="link" icon={<CheckOutlined />} onClick={() => Modal.confirm({ title: '确认审批通过？', content: `委外单 ${r.purchase_no || `#${r.id}`} 将变为已审批`, okText: '通过', cancelText: '取消', onOk: () => handleApprove(r, true) })}>审批</Button>
             )}
             {(r.status === '待审批' || r.status === '已审批') && (
-              <Button size="small" type="link" icon={<InboxOutlined />} onClick={() => Modal.confirm({ title: '确认入库？', content: `采购单 ${r.purchase_no || `#${r.id}`} 将标记为已入库并写入车间库存`, okText: '入库', cancelText: '取消', onOk: () => handleReceive(r) })}>入库</Button>
+              <Button size="small" type="link" icon={<InboxOutlined />} onClick={() => Modal.confirm({ title: '确认入库？', content: `委外单 ${r.purchase_no || `#${r.id}`} 将标记为已入库并写入车间库存`, okText: '入库', cancelText: '取消', onOk: () => handleReceive(r) })}>入库</Button>
             )}
             {moreItems.length > 0 && (
               <Dropdown
@@ -386,7 +398,7 @@ export default function Purchases() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ margin: 0 }}>采购管理</h2>
+        <h2 style={{ margin: 0 }}>委外管理</h2>
         <Space>
           <Input
             placeholder="搜索单号/备注"
@@ -398,7 +410,7 @@ export default function Purchases() {
           />
           <Button icon={<ReloadOutlined />} onClick={fetchAll}>刷新</Button>
           <Button icon={<DownloadOutlined />} onClick={handleExport}>导出 ({filtered.length})</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>新建采购单</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>新建委外单</Button>
         </Space>
       </div>
 
@@ -406,7 +418,7 @@ export default function Purchases() {
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col span={5}>
           <Card size="small" style={{ borderTop: '3px solid #2c5282' }}>
-            <Statistic title="总采购单" value={kpi.total} valueStyle={{ color: '#2c5282' }} />
+            <Statistic title="总委外单" value={kpi.total} valueStyle={{ color: '#2c5282' }} />
           </Card>
         </Col>
         <Col span={5}>
@@ -476,8 +488,8 @@ export default function Purchases() {
         locale={{
           emptyText: (
             <TableEmptyCell
-              resource="采购单"
-              actionText="新建采购单"
+              resource="委外单"
+              actionText="新建委外单"
               onAction={handleCreate}
               keyword={keyword}
               isDataEmpty={data.length === 0}
@@ -486,9 +498,9 @@ export default function Purchases() {
         }}
       />
 
-      {/* 新建采购单弹窗 */}
+      {/* 新建委外单弹窗 */}
       <Modal
-        title="新建采购单"
+        title="新建委外单"
         open={createOpen}
         onOk={handleSaveCreate}
         onCancel={() => setCreateOpen(false)}
@@ -510,6 +522,17 @@ export default function Purchases() {
               </Form.Item>
             </Col>
             <Col span={8}>
+              <Form.Item name="work_order_id" label="关联工单">
+                <Select
+                  showSearch
+                  allowClear
+                  placeholder="选择工单（可选）"
+                  optionFilterProp="label"
+                  options={workOrders.map((wo: any) => ({ value: wo.id, label: wo.order_no || wo.prod_no || `工单#${wo.id}` }))}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
               <Form.Item name="delivery_date" label="交货日期">
                 <DatePicker style={{ width: '100%' }} />
               </Form.Item>
@@ -525,7 +548,7 @@ export default function Purchases() {
             <Input.TextArea rows={2} placeholder="选填" />
           </Form.Item>
 
-          <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b' }}>采购明细</Divider>
+          <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b' }}>委外明细</Divider>
 
           <Form.List name="items">
             {(fields, { add, remove }) => (
@@ -576,9 +599,9 @@ export default function Purchases() {
         </Form>
       </Modal>
 
-      {/* 编辑采购单弹窗 */}
+      {/* 编辑委外单弹窗 */}
       <Modal
-        title={`编辑采购单 - ${editing?.purchase_no || editing?.id}`}
+        title={`编辑委外单 - ${editing?.purchase_no || editing?.id}`}
         open={editOpen}
         onOk={handleSaveEdit}
         onCancel={() => { setEditOpen(false); setEditing(null); }}
@@ -625,7 +648,7 @@ export default function Purchases() {
 
       {/* 详情弹窗 */}
       <Modal
-        title={`采购单详情 - ${detail?.purchase_no || `TMP-${detail?.id}`}`}
+        title={`委外单详情 - ${detail?.purchase_no || `TMP-${detail?.id}`}`}
         open={detailOpen}
         onCancel={() => setDetailOpen(false)}
         footer={[<Button key="close" onClick={() => setDetailOpen(false)}>关闭</Button>]}
@@ -634,16 +657,17 @@ export default function Purchases() {
         {detail && (
           <>
             <Row gutter={[16, 8]}>
-              <Col span={8}><b>采购单号：</b>{detail.purchase_no || `TMP-${detail.id}`}</Col>
+              <Col span={8}><b>委外单号：</b>{detail.purchase_no || `TMP-${detail.id}`}</Col>
               <Col span={8}><b>供应商：</b>{supplierMap[detail.supplier_id] || `ID:${detail.supplier_id}`}</Col>
               <Col span={8}><b>状态：</b><Tag color={getStatusColor(detail.status)}>{detail.status}</Tag></Col>
               <Col span={8}><b>总金额：</b>¥{Number(detail.total_amount || 0).toFixed(2)}</Col>
               <Col span={8}><b>交货日期：</b>{detail.delivery_date || '-'}</Col>
               <Col span={8}><b>关联：</b>{detail.ref_type ? `${detail.ref_type}#${detail.ref_id}` : '-'}</Col>
+              <Col span={8}><b>工单：</b>{detail.work_order_id ? (workOrders.find((wo: any) => wo.id === detail.work_order_id)?.order_no || workOrders.find((wo: any) => wo.id === detail.work_order_id)?.prod_no || `工单#${detail.work_order_id}`) : '-'}</Col>
               <Col span={8}><b>创建日期：</b>{(detail.created_at || '').split('T')[0]}</Col>
               <Col span={16}><b>备注：</b>{detail.remark || '-'}</Col>
             </Row>
-            <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b' }}>采购明细</Divider>
+            <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b' }}>委外明细</Divider>
             <Table
               size="small"
               rowKey="id"

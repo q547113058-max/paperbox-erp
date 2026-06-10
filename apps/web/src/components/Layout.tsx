@@ -35,9 +35,9 @@ const AMBER = '#d97706';
 
 // 角色权限配置
 const ROLE_PERMISSIONS: Record<string, string[]> = {
-  boss: ['/', '/products', '/orders', '/purchases', '/warehouse', '/deliveries', '/finance', '/receivables', '/payables', '/customers', '/suppliers', '/personnel', '/work_orders', '/outsourcing_orders', '/reconciliation_bills', '/knife_dies', '/color_prints', '/settings', '/action_logs', '/search'],
+  boss: ['/', '/products', '/orders', '/purchases', '/warehouse', '/deliveries', '/finance', '/receivables', '/payables', '/customers', '/suppliers', '/personnel', '/work_orders', '/reconciliation_bills', '/knife_dies', '/color_prints', '/settings', '/action_logs', '/search'],
   finance: ['/', '/orders', '/purchases', '/finance', '/receivables', '/payables', '/customers', '/suppliers', '/reconciliation_bills'],
-  warehouse: ['/', '/products', '/orders', '/purchases', '/warehouse', '/deliveries', '/work_orders', '/outsourcing_orders', '/knife_dies', '/color_prints', '/materials'],
+  warehouse: ['/', '/products', '/orders', '/purchases', '/warehouse', '/deliveries', '/work_orders', '/knife_dies', '/color_prints', '/materials'],
   sales: ['/', '/products', '/orders', '/customers', '/deliveries'],
   default: ['/'],
 };
@@ -55,10 +55,9 @@ const allMenuItems = [
   },
   {
     type: 'group' as const,
-    label: '采购',
+    label: '委外',
     children: [
-      { key: '/purchases', icon: <InboxOutlined />, label: '采购' },
-      { key: '/outsourcing_orders', icon: <ApiOutlined />, label: '委外' },
+      { key: '/purchases', icon: <InboxOutlined />, label: '委外' },
       { key: '/warehouse', icon: <InboxOutlined />, label: '仓库' },
     ],
   },
@@ -106,8 +105,7 @@ const PAGE_NAMES: Record<string, string> = {
   '/products': '产品管理',
   '/orders': '订单管理',
   '/work_orders': '工单管理',
-  '/purchases': '采购管理',
-  '/outsourcing_orders': '委外管理',
+  '/purchases': '委外管理',
   '/warehouse': '仓库管理',
   '/deliveries': '发货管理',
   '/reconciliation_bills': '对账管理',
