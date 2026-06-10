@@ -44,24 +44,60 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
 
 const allMenuItems = [
   { key: '/', icon: <DashboardOutlined />, label: '概览' },
-  { key: '/products', icon: <AppstoreOutlined />, label: '产品' },
-  { key: '/orders', icon: <ShoppingCartOutlined />, label: '销售订单' },
-  { key: '/work_orders', icon: <ToolOutlined />, label: '工单' },
-  { key: '/purchases', icon: <InboxOutlined />, label: '采购' },
-  { key: '/outsourcing_orders', icon: <ApiOutlined />, label: '委外' },
-  { key: '/warehouse', icon: <InboxOutlined />, label: '仓库' },
-  { key: '/deliveries', icon: <CarOutlined />, label: '发货' },
-  { key: '/reconciliation_bills', icon: <FileTextOutlined />, label: '对账' },
-  { key: '/finance', icon: <BankOutlined />, label: '财务' },
-  { key: '/receivables', icon: <BankOutlined />, label: '应收' },
-  { key: '/payables', icon: <BankOutlined />, label: '应付' },
-  { key: '/knife_dies', icon: <ToolOutlined />, label: '刀模' },
-  { key: '/color_prints', icon: <PictureOutlined />, label: '彩印' },
-  { key: '/customers', icon: <TeamOutlined />, label: '客户' },
-  { key: '/suppliers', icon: <TeamOutlined />, label: '供应商' },
-  { key: '/personnel', icon: <SettingOutlined />, label: '人员' },
-  { key: '/action_logs', icon: <HistoryOutlined />, label: '操作日志' },
-  { key: '/settings', icon: <SettingOutlined />, label: '系统设置' },
+  {
+    type: 'group' as const,
+    label: '销售',
+    children: [
+      { key: '/orders', icon: <ShoppingCartOutlined />, label: '销售订单' },
+      { key: '/work_orders', icon: <ToolOutlined />, label: '工单' },
+      { key: '/deliveries', icon: <CarOutlined />, label: '发货' },
+    ],
+  },
+  {
+    type: 'group' as const,
+    label: '采购',
+    children: [
+      { key: '/purchases', icon: <InboxOutlined />, label: '采购' },
+      { key: '/outsourcing_orders', icon: <ApiOutlined />, label: '委外' },
+      { key: '/warehouse', icon: <InboxOutlined />, label: '仓库' },
+    ],
+  },
+  {
+    type: 'group' as const,
+    label: '生产',
+    children: [
+      { key: '/knife_dies', icon: <ToolOutlined />, label: '刀模' },
+      { key: '/color_prints', icon: <PictureOutlined />, label: '彩印' },
+    ],
+  },
+  {
+    type: 'group' as const,
+    label: '财务',
+    children: [
+      { key: '/reconciliation_bills', icon: <FileTextOutlined />, label: '对账' },
+      { key: '/finance', icon: <BankOutlined />, label: '财务' },
+      { key: '/receivables', icon: <BankOutlined />, label: '应收' },
+      { key: '/payables', icon: <BankOutlined />, label: '应付' },
+    ],
+  },
+  {
+    type: 'group' as const,
+    label: '基础数据',
+    children: [
+      { key: '/products', icon: <AppstoreOutlined />, label: '产品' },
+      { key: '/customers', icon: <TeamOutlined />, label: '客户' },
+      { key: '/suppliers', icon: <TeamOutlined />, label: '供应商' },
+      { key: '/personnel', icon: <SettingOutlined />, label: '人员' },
+    ],
+  },
+  {
+    type: 'group' as const,
+    label: '系统',
+    children: [
+      { key: '/action_logs', icon: <HistoryOutlined />, label: '操作日志' },
+      { key: '/settings', icon: <SettingOutlined />, label: '系统设置' },
+    ],
+  },
 ];
 
 // 路径 → 页面名称映射
@@ -103,11 +139,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 根据角色过滤菜单
+  // 根据角色过滤菜单（支持分组结构）
   const menuItems = useMemo(() => {
     const role = user?.role || 'default';
     const allowedPaths = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.default;
-    return allMenuItems.filter((item) => allowedPaths.includes(item.key));
+    return allMenuItems
+      .map((item) => {
+        if (item.type === 'group' && item.children) {
+          const visibleChildren = item.children.filter((c: any) => allowedPaths.includes(c.key));
+          return visibleChildren.length > 0 ? { ...item, children: visibleChildren } : null;
+        }
+        return allowedPaths.includes((item as any).key) ? item : null;
+      })
+      .filter(Boolean);
   }, [user?.role]);
 
   // 面包屑
@@ -165,6 +209,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
             borderRight: 0,
           }}
         />
+        <style>{`
+          .ant-menu-item-group-title {
+            color: rgba(255,255,255,0.35) !important;
+            font-size: 11px !important;
+            letter-spacing: 1px !important;
+            text-transform: uppercase !important;
+            padding: 12px 16px 4px !important;
+          }
+          .ant-menu-item-group-title:not(:first-child) {
+            border-top: 1px solid rgba(255,255,255,0.06);
+            margin-top: 4px;
+          }
+        `}</style>
       </div>
 
       {/* 底部公司信息 */}
