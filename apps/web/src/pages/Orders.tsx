@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Input, Button, Space, Tag, message, Modal, Form, InputNumber, Select, DatePicker, Row, Col, Divider, Card, Statistic, Tooltip, Dropdown } from 'antd';
+import { Table, Input, Button, Space, Tag, message, Modal, Form, InputNumber, Select, DatePicker, Row, Col, Divider, Card, Statistic, Tooltip, Dropdown, Radio } from 'antd';
 import {
   EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined,
   SearchOutlined, DownloadOutlined, PrinterOutlined, CheckOutlined, StopOutlined,
@@ -47,6 +47,8 @@ export default function Orders() {
   const [keyword, setKeyword] = useState('');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [filterCustomer, setFilterCustomer] = useState<number | null>(null);
+  const [dateRange, setDateRange] = useState<'thisMonth' | 'lastMonth' | 'all'>('all');
+  const [filterSalesman, setFilterSalesman] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<any>(null);
@@ -75,6 +77,18 @@ export default function Orders() {
   const customerMap = Object.fromEntries(customers.map((c) => [c.id, c.name || c.contact]));
   const productMap = Object.fromEntries(products.map((p) => [p.id, p]));
 
+  // 业务员下拉选项（从 data 中提取不重复的 salesman）
+  const salesmanOptions = Array.from(new Set(
+    data.map((o: any) => (o.salesman || '').trim()).filter(Boolean)
+  )).map((s) => ({ value: s, label: s }));
+
+  // 日期范围计算
+  const today = dayjs();
+  const thisMonthStart = today.startOf('month');
+  const thisMonthEnd = today.endOf('month');
+  const lastMonthStart = today.subtract(1, 'month').startOf('month');
+  const lastMonthEnd = today.subtract(1, 'month').endOf('month');
+
   const filtered = data.filter((o) => {
     if (keyword) {
       const k = keyword.toLowerCase();
@@ -84,6 +98,15 @@ export default function Orders() {
     }
     if (filterStatus && o.status !== filterStatus) return false;
     if (filterCustomer && o.customer_id !== filterCustomer) return false;
+    if (filterSalesman && ((o as any).salesman || '') !== filterSalesman) return false;
+    if (dateRange !== 'all') {
+      // 优先用 order_date，没有则用 created_at 兜底
+      const dateStr = o.order_date || (typeof o.created_at === 'string' ? o.created_at.slice(0, 10) : null);
+      if (!dateStr) return false;
+      const od = dayjs(dateStr);
+      if (dateRange === 'thisMonth' && (od.isBefore(thisMonthStart) || od.isAfter(thisMonthEnd))) return false;
+      if (dateRange === 'lastMonth' && (od.isBefore(lastMonthStart) || od.isAfter(lastMonthEnd))) return false;
+    }
     return true;
   });
 
@@ -334,6 +357,17 @@ export default function Orders() {
 
       {/* 筛选条 */}
       <div style={{ marginBottom: 12, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Radio.Group
+          value={dateRange}
+          onChange={(e) => setDateRange(e.target.value)}
+          optionType="button"
+          buttonStyle="solid"
+          size="small"
+        >
+          <Radio.Button value="thisMonth">本月</Radio.Button>
+          <Radio.Button value="lastMonth">上月</Radio.Button>
+          <Radio.Button value="all">全部</Radio.Button>
+        </Radio.Group>
         <span>状态：</span>
         <Select allowClear placeholder="全部状态" value={filterStatus} onChange={setFilterStatus} style={{ width: 140 }} options={STATUS_OPTIONS.map((s) => ({ value: s, label: s }))} />
         <span>客户：</span>
@@ -342,7 +376,13 @@ export default function Orders() {
           style={{ width: 180 }} optionFilterProp="label"
           options={customers.map((c) => ({ value: c.id, label: c.name || c.contact || `ID:${c.id}` }))}
         />
-        <Button size="small" onClick={() => { setKeyword(''); setFilterStatus(null); setFilterCustomer(null); }}>清除筛选</Button>
+        <span>业务员：</span>
+        <Select
+          allowClear showSearch placeholder="全部业务员" value={filterSalesman} onChange={setFilterSalesman}
+          style={{ width: 140 }} optionFilterProp="label"
+          options={salesmanOptions}
+        />
+        <Button size="small" onClick={() => { setKeyword(''); setFilterStatus(null); setFilterCustomer(null); setFilterSalesman(null); setDateRange('all'); }}>清除筛选</Button>
       </div>
 
       <Table
