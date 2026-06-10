@@ -351,10 +351,10 @@ export default function Purchases() {
           <Space size={4}>
             <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => handleViewDetail(r)}>详情</Button>
             {r.status === '待审批' && (
-              <Button size="small" type="link" icon={<CheckOutlined />} onClick={() => handleApprove(r, true)}>审批</Button>
+              <Button size="small" type="link" icon={<CheckOutlined />} onClick={() => Modal.confirm({ title: '确认审批通过？', content: `采购单 ${r.purchase_no || `#${r.id}`} 将变为已审批`, okText: '通过', cancelText: '取消', onOk: () => handleApprove(r, true) })}>审批</Button>
             )}
             {(r.status === '待审批' || r.status === '已审批') && (
-              <Button size="small" type="link" icon={<InboxOutlined />} onClick={() => handleReceive(r)}>入库</Button>
+              <Button size="small" type="link" icon={<InboxOutlined />} onClick={() => Modal.confirm({ title: '确认入库？', content: `采购单 ${r.purchase_no || `#${r.id}`} 将标记为已入库并写入车间库存`, okText: '入库', cancelText: '取消', onOk: () => handleReceive(r) })}>入库</Button>
             )}
             {moreItems.length > 0 && (
               <Dropdown

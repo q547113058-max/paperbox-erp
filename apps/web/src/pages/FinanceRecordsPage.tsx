@@ -265,7 +265,7 @@ export default function FinanceRecordsPage({ type, title, partyLabel, partyPlace
           <Space size={4}>
             <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => openDetail(r)}>详情</Button>
             {r.status !== '已结清' && r.status !== '已冲正' && (
-              <Button size="small" type="link" icon={<CheckOutlined />} onClick={() => handleSettle(r)}>结清</Button>
+              <Button size="small" type="link" icon={<CheckOutlined />} onClick={() => Modal.confirm({ title: '确认结清？', content: `${r.ref_no || `#${r.id}`}（¥${Number(r.amount || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}）将标记为已结清`, okText: '结清', cancelText: '取消', onOk: () => handleSettle(r) })}>结清</Button>
             )}
             {moreItems.length > 0 && (
               <Dropdown

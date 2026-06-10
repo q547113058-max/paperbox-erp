@@ -235,7 +235,7 @@ export default function Orders() {
 
   const columns = [
     { title: '订单号', dataIndex: 'order_no', key: 'order_no', width: 145, fixed: 'left' as const, render: (v: string | null, r: Order) => v ? <Tooltip title={v}><span style={{ whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{v}</span></Tooltip> : <Tag color="orange">TMP-{r.id}</Tag> },
-    { title: '客户', dataIndex: 'customer_id', key: 'customer', width: 120, render: (id: number) => customerMap[id] || `ID:${id}` },
+    { title: '客户', dataIndex: 'customer_id', key: 'customer', width: 120, render: (id: number) => customerMap[id] || '未关联' },
     { title: '业务员', dataIndex: 'salesman_id', key: 'salesman', width: 80, render: (v: number) => v ? `ID:${v}` : '-' },
     { title: '状态', dataIndex: 'status', key: 'status', width: 110, render: (s: string, r: Order) => (
         <Select
@@ -266,10 +266,10 @@ export default function Orders() {
             <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => handleViewDetail(r)}>详情</Button>
             <Button size="small" type="link" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
             {r.status === '已确认' && (
-              <Button size="small" type="link" icon={<ToolOutlined />} onClick={() => handleGenerateWorkOrder(r)}>工单</Button>
+              <Button size="small" type="link" icon={<ToolOutlined />} onClick={() => Modal.confirm({ title: '确认生成工单？', content: `将为订单 ${r.order_no || `#${r.id}`} 生成生产工单`, okText: '生成', cancelText: '取消', onOk: () => handleGenerateWorkOrder(r) })}>工单</Button>
             )}
             {r.status !== '已完成' && r.status !== '已取消' && (
-              <Button size="small" type="link" icon={<CarOutlined />} onClick={() => handleGenerateDelivery(r)}>发货</Button>
+              <Button size="small" type="link" icon={<CarOutlined />} onClick={() => Modal.confirm({ title: '确认生成发货单？', content: `将为订单 ${r.order_no || `#${r.id}`} 生成发货单`, okText: '生成', cancelText: '取消', onOk: () => handleGenerateDelivery(r) })}>发货</Button>
             )}
             <Dropdown
               trigger={['click']}

@@ -583,3 +583,30 @@ C：继续查旧系统 P2/P3 展示差异
 - browser_console：0 errors
 - 仅测试服，未同步正式服
 
+---
+
+## QA 确认弹窗修复（2026-06-10 晚间）
+
+### 背景
+
+交互验证发现 3 个 Medium 级问题：订单工单/发货、采购审批/入库、应收结清均为直接 POST/PUT，无确认弹窗。
+
+### 修复
+
+- 订单 `handleGenerateWorkOrder` / `handleGenerateDelivery`：按钮 onClick 改为 `Modal.confirm({ onOk: () => ... })`
+- 采购 `handleApprove(r, true)` / `handleReceive`：同上
+- 应收 `handleSettle`：同上
+- 订单客户列 `ID:${id}` → `未关联`
+
+### 验收
+
+- tsc / 图标审计 / vite build / nginx reload：PASS
+- 浏览器 5 个确认弹窗：全部 PASS
+- console 0 errors
+
+### 注意
+
+- 驳回（handleApprove false）和取消（handleCancel）已有自己的 Modal.confirm，无需改动
+- 冲正（handleCancelRecord）使用 window.prompt，无需改动
+- 删除已在 Dropdown menu onClick 中使用 Modal.confirm
+
