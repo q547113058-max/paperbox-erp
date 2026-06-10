@@ -238,3 +238,106 @@ POST   /api/purchases/:id/update-no    更新单号（合并打印）
 | C | 跳到 P0-4 Receivables/Payables 2 个新 page（业务闭环必要）|
 | D | 暂停，先把这次 P0 推到正式服 |
 | E | 暂停，等用户反馈 |
+
+
+---
+
+## P0-3 已修复：Orders.tsx 详情 + 产品明细缺失（已完成）
+
+### 现象
+- 新版 Orders.tsx 原 140 行，虽然有新建/编辑弹窗，但详情只是缺失状态（无详情弹窗）。
+- `GET /api/orders/:id` 后端已经返回 `{ ...order, items }`，但前端没有使用，导致订单产品明细、纸箱行业字段、金额分解无法查看。
+- 旧系统销售订单关注客户/客户单号/交期/产品明细/面纸中纸/印刷/表面处理/刀模/金额核算；新版只显示列表 10 列，业务信息复刻不完整。
+
+### 修复
+**Orders.tsx 140 → 596 行**：
+
+| 模块 | 旧 | 新 |
+|------|---|---|
+| KPI 卡片 | 0 | 5 个（总订单/待确认/生产中/待发货/总金额）|
+| 搜索/筛选 | 1（搜索）| 3（搜索/状态/客户）+ 清除按钮 |
+| 表格列 | 10 | 12（新增业务员、状态行内 Select、操作列扩展）|
+| 操作按钮 | 2 | 6（详情/编辑/生成工单/生成发货/打印/删除）|
+| 详情弹窗 | 0 | 1 个 960px 详情 Modal，70vh 内部滚动 |
+| 产品明细 | 不显示 | 详情表 9 列 + 合计行；新建/编辑 Form.List 可增删 |
+| 行业字段 | 不显示 | 面纸/中纸/印刷/表面处理/刀模/金额核算完整展示 |
+| 导出 | 0 | CSV（带 BOM）|
+| 状态切换 | 弹窗内 | 表格行内 Select 调 `/orders/:id/status` |
+
+### 业务闭环
+
+- 新建订单：客户 Select + 状态 + 日期 + 金额 + 产品明细 Form.List
+- 编辑订单：先拉 `/orders/:id`，回填 `items`，避免只编辑主表丢子表
+- 详情查看：`/orders/:id` 返回明细，显示：
+  - 基本信息 12 字段
+  - 面纸/中纸 2 组字段
+  - 印刷/表面处理/刀模 8 字段
+  - 金额核算 8 字段
+  - 产品明细 9 列（产品/规格/数量/已发货/单价/金额/客户产品编号/交期/备注）+ 数量/已发/金额合计
+- 状态推进：表格行内 Select 调 `/api/orders/:id/status`
+- 生成工单：`POST /api/work_orders/from-order`
+- 生成发货：先拉详情 items，再 `POST /api/deliveries/from-order`，避免误用当前 detail state
+
+### types/api.ts 扩展
+
+`Order` interface 从 18 字段补到完整 45 字段：
+- `face_supplier/face_material/face_size/face_qty/face_price/face_fee`
+- `medium_supplier/medium_material/medium_weight/medium_size/medium_qty/medium_price`
+- `print_color/print_price/surface_process/surface_price/die_price/outsource_fee`
+- `reference_info/customer_feedback`
+- `cost_tax/cost_no_tax/price_tax/price_no_tax/profit_margin/total_tax/total_no_tax`
+
+### 验证
+
+- typecheck: `npx tsc --noEmit -p apps/web/tsconfig.json` → 0 errors
+- vite build: `npx vite build` → ✓ 7.85s, Orders chunk 19.46 kB gzip 5.92 kB
+- 部署: nginx reload OK
+- 浏览器 `/orders`: 23 条订单加载；KPI 实时显示 23 / 待确认 21 / 生产中 0 / 待发货 0 / ¥424,306.00
+- 详情弹窗：`SO97640178` 打开正常，基本信息/面纸中纸/印刷工艺/金额/产品明细/备注均在 DOM 中显示
+- 详情产品明细：1 项，数量 100，金额 ¥1000.00，合计行正确
+- 新建弹窗：产品明细 Form.List 字段完整（产品/数量/单价/客户产品编号/交期/备注/删除/添加产品明细）
+- AntD 图标审计：`antd-icon-import-audit.py /root/workspace/paperbox-erp/apps/web/src` → PASS
+- 浏览器 console: 0 errors, 0 messages
+
+### 设计标准（§04 七条 UI 验收）
+
+| # | 检查项 | 结论 | 证据 |
+|---|--------|------|------|
+| 1 | 品牌色一致 | ✅ PASS | KPI 顶线 #2c5282 / 状态色统一 |
+| 2 | 状态色映射 | ✅ PASS | `getStatusColor()` + 行内 Select Tag |
+| 3 | 表格空态 | ✅ PASS | `TableEmptyCell` 接入 |
+| 4 | 操作按钮状态条件渲染 | ✅ PASS | 已确认显示生成工单；已完成/取消不生成发货 |
+| 5 | 数字列右对齐 | ✅ PASS | 金额/成本/利润/明细数量金额均 right |
+| 6 | scroll.x 防横向溢出 | ✅ PASS | 主表 `scroll.x=1600`，操作列 fixed right |
+| 7 | 不像默认模板 | ✅ PASS | 5 KPI + 详情行业字段分区 + 子表合计行 |
+
+### 发现 / 教训
+
+- `Table.Summary.Cell` 不支持 `style` prop，必须用 `<span style={...}>` 包裹内容。
+- 表格行内「生成发货」不能依赖全局 `detail` state；必须即时拉 `/orders/:id` 获取 items，否则未打开详情时会传空 items。
+- 新建/编辑订单如果不在 `handleEdit` 中拉详情回填 `items`，保存会覆盖/丢失订单明细。
+- 大弹窗应加 `styles={{ body: { maxHeight: '70vh', overflowY: 'auto' } }}`，否则 browser_vision 只能看到上半部分，用户也不易滚动查看。
+
+### 累计 P0 进展
+
+| Page | 行数 | 业务闭环 | 状态 |
+|------|------|---------|------|
+| Purchases | 44→672 | ✅ 采购审批/出单/入库 | ✅ 完成 |
+| Deliveries | 41→665 | ✅ 发货/签收 | ✅ 完成 |
+| Orders | 140→596 | ✅ 详情/明细/状态/生成工单/生成发货 | ✅ 完成 |
+| Receivables | 0（待建） | ❌ | ⏳ P0-4 |
+| Payables | 0（待建） | ❌ | ⏳ P0-4 |
+
+## 下一步 P0 阻塞
+
+- [ ] P0-4: Receivables.tsx + Payables.tsx 2 个新 page（应收应付，旧版有，新版 0 个）
+
+## 5 档投票
+
+| 档 | 建议 |
+|----|------|
+| A | 继续 P0-4 Receivables + Payables 2 个新 page |
+| B | 先做 P1 视觉打磨（Orders/Purchases/Deliveries 统一空值灰显、行 hover、批量操作）|
+| C | 先全链路回归（Orders→WorkOrders→Purchases→Deliveries 浏览器 11 页）|
+| D | 暂停，先同步正式服 |
+| E | 暂停，等用户反馈 |

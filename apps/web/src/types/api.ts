@@ -47,6 +47,35 @@ export interface Order {
   die_size: string;
   quantity: string;
   order_date: string;
+  // 纸箱行业核心字段（Phase 1 补全）
+  face_supplier: string;
+  face_material: string;
+  face_size: string;
+  face_qty: string;
+  face_price: string;
+  face_fee: string;
+  medium_supplier: string;
+  medium_material: string;
+  medium_weight: string;
+  medium_size: string;
+  medium_qty: string;
+  medium_price: string;
+  print_color: string;
+  print_price: string;
+  surface_process: string;
+  surface_price: string;
+  die_price: string;
+  outsource_fee: string;
+  reference_info: string;
+  customer_feedback: string;
+  // 金额（Phase 1 补全）
+  cost_tax: string;
+  cost_no_tax: string;
+  price_tax: string;
+  price_no_tax: string;
+  profit_margin: string;
+  total_tax: string;
+  total_no_tax: string;
 }
 
 export interface Customer {
