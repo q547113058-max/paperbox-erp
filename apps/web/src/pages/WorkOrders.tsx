@@ -230,13 +230,6 @@ export default function WorkOrders() {
     { title: '产品ID', dataIndex: 'product_id', key: 'product_id', width: 80 },
     { title: '数量', dataIndex: 'quantity', key: 'quantity', width: 80, align: 'right' as const,
       render: (v: number | null) => v ?? '-' },
-    // 面纸/坑纸
-    { title: '面纸/坑纸', dataIndex: 'material_type', key: 'material_type', width: 110,
-      render: (v: string) => v || '-' },
-    { title: '箱型', dataIndex: 'box_type', key: 'box_type', width: 100,
-      render: (v: string) => v || '-' },
-    { title: '工艺', dataIndex: 'processes', key: 'processes', width: 110, ellipsis: true,
-      render: (v: string) => v || '-' },
     { title: '工人', dataIndex: 'worker', key: 'worker', width: 90,
       render: (v: string) => v || '-' },
     { title: '优先级', dataIndex: 'priority', key: 'priority', width: 80, align: 'center' as const,
@@ -445,12 +438,6 @@ export default function WorkOrders() {
               规格尺寸
             </Divider>
             <Descriptions size="small" column={2} bordered colon={false} labelStyle={{ width: 100, color: '#64748b' }}>
-              <Descriptions.Item label="面纸/坑纸">
-                {detailWo.material_type || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="箱型">
-                {detailWo.box_type || '-'}
-              </Descriptions.Item>
               <Descriptions.Item label="成品规格">
                 {detailWo.finished_spec || '-'}
               </Descriptions.Item>
@@ -486,9 +473,6 @@ export default function WorkOrders() {
               </Descriptions.Item>
               <Descriptions.Item label="进仓码">
                 <span style={{ fontFamily: 'monospace' }}>{detailWo.entry_code || '-'}</span>
-              </Descriptions.Item>
-              <Descriptions.Item label="工艺" span={2}>
-                {detailWo.processes || '-'}
               </Descriptions.Item>
             </Descriptions>
 
