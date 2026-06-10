@@ -47,7 +47,8 @@ export default function Orders() {
   const [keyword, setKeyword] = useState('');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [filterCustomer, setFilterCustomer] = useState<number | null>(null);
-  const [dateRange, setDateRange] = useState<'thisMonth' | 'lastMonth' | 'all'>('all');
+  const [dateRange, setDateRange] = useState<'thisMonth' | 'lastMonth' | 'all' | 'custom'>('all');
+  const [customRange, setCustomRange] = useState<[string, string] | null>(null);
   const [filterSalesman, setFilterSalesman] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -99,7 +100,15 @@ export default function Orders() {
     if (filterStatus && o.status !== filterStatus) return false;
     if (filterCustomer && o.customer_id !== filterCustomer) return false;
     if (filterSalesman && ((o as any).salesman || '') !== filterSalesman) return false;
-    if (dateRange !== 'all') {
+    if (dateRange === 'custom' && customRange) {
+      const [start, end] = customRange;
+      const startD = dayjs(start);
+      const endD = dayjs(end);
+      const dateStr = o.order_date || (typeof o.created_at === 'string' ? o.created_at.slice(0, 10) : null);
+      if (!dateStr) return false;
+      const od = dayjs(dateStr);
+      if (od.isBefore(startD) || od.isAfter(endD)) return false;
+    } else if (dateRange !== 'all') {
       // 优先用 order_date，没有则用 created_at 兜底
       const dateStr = o.order_date || (typeof o.created_at === 'string' ? o.created_at.slice(0, 10) : null);
       if (!dateStr) return false;
@@ -359,7 +368,7 @@ export default function Orders() {
       <div style={{ marginBottom: 12, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
         <Radio.Group
           value={dateRange}
-          onChange={(e) => setDateRange(e.target.value)}
+          onChange={(e) => { setDateRange(e.target.value); if (e.target.value !== 'custom') setCustomRange(null); }}
           optionType="button"
           buttonStyle="solid"
           size="small"
@@ -368,6 +377,21 @@ export default function Orders() {
           <Radio.Button value="lastMonth">上月</Radio.Button>
           <Radio.Button value="all">全部</Radio.Button>
         </Radio.Group>
+        <DatePicker.RangePicker
+          value={customRange ? [dayjs(customRange[0]), dayjs(customRange[1])] : null}
+          onChange={(dates) => {
+            if (dates && dates[0] && dates[1]) {
+              setCustomRange([dates[0].format('YYYY-MM-DD'), dates[1].format('YYYY-MM-DD')]);
+              setDateRange('custom');
+            } else {
+              setCustomRange(null);
+              setDateRange('all');
+            }
+          }}
+          placeholder={['开始日期', '结束日期']}
+          size="small"
+          style={{ width: 240 }}
+        />
         <span>状态：</span>
         <Select allowClear placeholder="全部状态" value={filterStatus} onChange={setFilterStatus} style={{ width: 140 }} options={STATUS_OPTIONS.map((s) => ({ value: s, label: s }))} />
         <span>客户：</span>
@@ -382,7 +406,7 @@ export default function Orders() {
           style={{ width: 140 }} optionFilterProp="label"
           options={salesmanOptions}
         />
-        <Button size="small" onClick={() => { setKeyword(''); setFilterStatus(null); setFilterCustomer(null); setFilterSalesman(null); setDateRange('all'); }}>清除筛选</Button>
+        <Button size="small" onClick={() => { setKeyword(''); setFilterStatus(null); setFilterCustomer(null); setFilterSalesman(null); setDateRange('all'); setCustomRange(null); }}>清除筛选</Button>
       </div>
 
       <Table
