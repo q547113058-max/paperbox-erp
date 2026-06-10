@@ -17,6 +17,8 @@ import {
   FileTextOutlined,
   HomeOutlined,
   PictureOutlined,
+  SearchOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth';
@@ -33,7 +35,7 @@ const AMBER = '#d97706';
 
 // 角色权限配置
 const ROLE_PERMISSIONS: Record<string, string[]> = {
-  boss: ['/', '/products', '/orders', '/purchases', '/warehouse', '/deliveries', '/finance', '/receivables', '/payables', '/customers', '/suppliers', '/personnel', '/work_orders', '/outsourcing_orders', '/reconciliation_bills', '/knife_dies', '/color_prints'],
+  boss: ['/', '/products', '/orders', '/purchases', '/warehouse', '/deliveries', '/finance', '/receivables', '/payables', '/customers', '/suppliers', '/personnel', '/work_orders', '/outsourcing_orders', '/reconciliation_bills', '/knife_dies', '/color_prints', '/settings', '/action_logs', '/search'],
   finance: ['/', '/orders', '/purchases', '/finance', '/receivables', '/payables', '/customers', '/suppliers', '/reconciliation_bills'],
   warehouse: ['/', '/products', '/orders', '/purchases', '/warehouse', '/deliveries', '/work_orders', '/outsourcing_orders', '/knife_dies', '/color_prints', '/materials'],
   sales: ['/', '/products', '/orders', '/customers', '/deliveries'],
@@ -58,6 +60,9 @@ const allMenuItems = [
   { key: '/customers', icon: <TeamOutlined />, label: '客户' },
   { key: '/suppliers', icon: <TeamOutlined />, label: '供应商' },
   { key: '/personnel', icon: <SettingOutlined />, label: '人员' },
+  { key: '/search', icon: <SearchOutlined />, label: '全局搜索' },
+  { key: '/action_logs', icon: <HistoryOutlined />, label: '操作日志' },
+  { key: '/settings', icon: <SettingOutlined />, label: '系统设置' },
 ];
 
 // 路径 → 页面名称映射

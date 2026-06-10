@@ -19,6 +19,41 @@ const PERIOD_OPTIONS = ['现结', '月结', '季度结', '年结'];
 const RECEIVABLE_CATEGORIES = ['销售货款', '加工费', '运费', '其他应收'];
 const PAYABLE_CATEGORIES = ['采购货款', '委外加工费', '运费', '工资', '其他应付'];
 
+// 将 ref_type 归一为「来源类型」标签
+// 订单 = 销售订单/对账单/采购单/采购；委外 = 委外单/委外加工；固定 = 固定项目；手工 = 其他
+const SOURCE_TYPE_RULES: Array<{ code: string; color: string; match: RegExp }> = [
+  { code: '订单', color: 'blue',    match: /销售|对账|采购单|^采购$|订单/ },
+  { code: '委外', color: 'purple',  match: /委外/ },
+  { code: '固定', color: 'cyan',    match: /固定/ },
+  { code: '运费', color: 'gold',    match: /运费/ },
+  { code: '工资', color: 'volcano', match: /工资/ },
+  { code: '加工', color: 'magenta', match: /加工/ },
+];
+
+function normalizeSourceType(refType?: string | null): { code: string; color: string } {
+  const v = (refType || '').trim();
+  if (!v) return { code: '手工', color: 'default' };
+  for (const rule of SOURCE_TYPE_RULES) {
+    if (rule.match.test(v)) return { code: rule.code, color: rule.color };
+  }
+  return { code: v, color: 'default' };
+}
+
+interface SourceInfo {
+  source_type: string;
+  source_id: number;
+  source_ref: string;
+}
+
+function deriveSourceInfo(record: FinanceRecord): SourceInfo {
+  const st = normalizeSourceType(record.ref_type);
+  return {
+    source_type: st.code,
+    source_id: Number(record.id || 0),
+    source_ref: record.ref_no || `FIN-${record.id}`,
+  };
+}
+
 type FinanceType = '应收' | '应付';
 
 interface Props {
@@ -238,6 +273,11 @@ export default function FinanceRecordsPage({ type, title, partyLabel, partyPlace
     { title: '单号', dataIndex: 'ref_no', key: 'ref_no', width: 150, fixed: 'left' as const,
       render: (v: string, r: FinanceRecord) => v ? <Tooltip title={v}><span style={{ whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{v}</span></Tooltip> : <Tag color="orange">FIN-{r.id}</Tag> },
     { title: '来源', dataIndex: 'ref_type', key: 'ref_type', width: 110, render: (v: string) => v || '-' },
+    { title: '来源类型', dataIndex: 'source_type', key: 'source_type', width: 100, align: 'center' as const,
+      render: (_: any, r: FinanceRecord) => {
+        const st = normalizeSourceType(r.ref_type);
+        return <Tag color={st.color}>{st.code}</Tag>;
+      } },
     { title: partyLabel, dataIndex: 'party_name', key: 'party_name', width: 160, render: (v: string) => v || '-' },
     { title: '金额', dataIndex: 'amount', key: 'amount', width: 120, align: 'right' as const,
       render: (v: number, r: FinanceRecord) => <span style={{ fontWeight: 700, color: r.status === '已冲正' ? '#94a3b8' : amountColor }}>{fmtMoney(v)}</span> },
@@ -343,7 +383,7 @@ export default function FinanceRecordsPage({ type, title, partyLabel, partyPlace
         columns={columns}
         dataSource={filtered}
         pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
-        scroll={{ x: 1700 }}
+        scroll={{ x: 1820 }}
         rowClassName={(r) => r.status === '已冲正' ? 'finance-row-cancelled' : ''}
         locale={{ emptyText: <TableEmptyCell resource={title} actionText={`新建${type}`} onAction={openCreate} keyword={keyword} isDataEmpty={data.length === 0} /> }}
       />
@@ -421,6 +461,33 @@ export default function FinanceRecordsPage({ type, title, partyLabel, partyPlace
                 </>
               )}
             </Row>
+            <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b' }}>来源明细</Divider>
+            {(() => {
+              const src = deriveSourceInfo(detail);
+              return (
+                <Card size="small" style={{ background: '#f8fafc', borderColor: '#e2e8f0' }}>
+                  <Row gutter={[16, 8]}>
+                    <Col span={8}>
+                      <b style={{ color: '#475569' }}>来源类型：</b>
+                      <Tag color={normalizeSourceType(detail.ref_type).color}>{src.source_type}</Tag>
+                    </Col>
+                    <Col span={8}>
+                      <b style={{ color: '#475569' }}>来源 ID：</b>
+                      <span style={{ fontFamily: 'monospace' }}>#{src.source_id}</span>
+                    </Col>
+                    <Col span={8}>
+                      <b style={{ color: '#475569' }}>来源单号：</b>
+                      <Tooltip title={src.source_ref}>
+                        <span style={{ fontFamily: 'monospace', color: '#2c5282' }}>{src.source_ref}</span>
+                      </Tooltip>
+                    </Col>
+                    <Col span={24} style={{ color: '#94a3b8', fontSize: 12, marginTop: 4 }}>
+                      原始来源字段：<code>ref_type = "{detail.ref_type || '-'}"</code>
+                    </Col>
+                  </Row>
+                </Card>
+              );
+            })()}
             <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b' }}>业务提示</Divider>
             <Card size="small" style={{ background: '#f8fafc', borderColor: '#e2e8f0' }}>
               <Space>

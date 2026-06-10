@@ -687,3 +687,34 @@ P2 展示差异扫描发现 3 个核心业务页差异仍大，继续补齐。
 - WorkOrders 后端 /api/print/work_order/:id 端点不存在，前端按需求实现打开逻辑，后续需后端补端点
 - 旧版 Customers 还有"添加材料类型"按钮（基础资料弹窗），新版未补
 
+---
+
+## P2 整页缺失 + Finance 增强（2026-06-10 晚间）
+
+### 新建 3 整页
+
+- Settings.tsx（505 行）：配置管理 + 常用配置快捷区 + boss 权限
+- ActionLogs.tsx（541 行）：日志查询/筛选/导出/清空
+- GlobalSearch.tsx（651 行）：跨 6 模块并行搜索 + Tabs 分组
+
+### 增强 Finance / FinanceRecordsPage
+
+- Finance 118→280 行：月度汇总 12 行 + 类别分布
+- FinanceRecordsPage 438→505 行：来源类型列 + 详情来源明细
+
+### 路由与菜单
+
+- App.tsx：3 个新路由
+- Layout.tsx：3 个新菜单项 + boss 权限
+
+### 验收
+
+- tsc / 图标审计 / vite build / nginx reload：PASS
+- 4 页面浏览器验证全部正常
+- console 0 errors
+
+### 后续
+
+- Settings 后端只有 3 字段（id/key/value），如要支持分组、描述等需后端 schema 升级
+- GlobalSearch 是客户端全量模糊匹配，未做后端全文索引；大数据量时性能可能下降
+

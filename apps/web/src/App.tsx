@@ -24,6 +24,9 @@ const OutsourcingOrders = lazy(() => import('./pages/OutsourcingOrders'));
 const ReconciliationBills = lazy(() => import('./pages/ReconciliationBills'));
 const KnifeDies = lazy(() => import('./pages/KnifeDies'));
 const ColorPrints = lazy(() => import('./pages/ColorPrints'));
+const GlobalSearch = lazy(() => import('./pages/GlobalSearch'));
+const Settings = lazy(() => import('./pages/Settings'));
+const ActionLogs = lazy(() => import('./pages/ActionLogs'));
 
 // 加载中组件 — 表格骨架（避免白屏闪烁，dw-skills §04 第 6 条）
 const Loading = () => <TableSkeleton rows={8} columns={6} />;
@@ -64,6 +67,9 @@ export default function App() {
                       <Route path="/reconciliation_bills" element={<ReconciliationBills />} />
                       <Route path="/knife_dies" element={<KnifeDies />} />
                       <Route path="/color_prints" element={<ColorPrints />} />
+                      <Route path="/search" element={<GlobalSearch />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/action_logs" element={<ActionLogs />} />
                     </Routes>
                   </Suspense>
                 </Layout>
