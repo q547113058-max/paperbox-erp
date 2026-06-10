@@ -759,3 +759,34 @@ P2 展示差异扫描发现 3 个核心业务页差异仍大，继续补齐。
 - KnifeDies「添加客户」快捷 Modal 只填名称，详细信息需到客户管理页完善
 - ColorPrints 后端无「连续新建」支持，前端保存后清空表单再填（数据实时刷新）
 
+---
+
+## Suppliers / Warehouse / ReconciliationBills 差异补齐（2026-06-10 晚间）
+
+### Suppliers 改动
+
+- 106→160 行
+- 详情 Modal 3 区域 + 删除 Modal.confirm + 结算方式/返点%列
+
+### Warehouse 改动
+
+- 46→105 行
+- 4 KPI + 订单号/工单号映射 + 详情 Modal + 刷新按钮
+
+### ReconciliationBills 改动
+
+- 188→273 行
+- 客户名映射 + 金额 nowrap + 确认 Modal.confirm + 详情 Descriptions + Dropdown 收纳
+
+### 验收
+
+- tsc / 图标审计 / vite build / nginx reload：PASS
+- 3 页面浏览器验证全部正常
+- console 0 errors
+
+### P0~P3 功能对齐度（此时）
+
+- 核心业务页（10 页）：10/10
+- 辅助页面（Settings/ActionLogs/GlobalSearch/Suppliers/Warehouse/ReconciliationBills）：6/6 全部补齐
+- 剩余：仅 Suppliers 表格搜索可扩展（按 material_type 筛选），Warehouse 后端可能缺 WorkshopInventory 实体
+
