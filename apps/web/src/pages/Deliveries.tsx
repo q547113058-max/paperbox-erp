@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Table, Input, Button, Space, Tag, message, Modal, Form, InputNumber,
-  Select, DatePicker, Popconfirm, Row, Col, Divider, Card, Statistic, Tooltip,
+  Select, DatePicker, Row, Col, Divider, Card, Statistic, Tooltip, Dropdown,
 } from 'antd';
 import {
   PlusOutlined, EyeOutlined, CarOutlined, CheckCircleOutlined,
-  PrinterOutlined, DownloadOutlined, StopOutlined, EditOutlined,
-  DeleteOutlined, SearchOutlined, ReloadOutlined, ThunderboltOutlined,
+  PrinterOutlined, DownloadOutlined, EditOutlined,
+  DeleteOutlined, SearchOutlined, ReloadOutlined, ThunderboltOutlined, MoreOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Delivery, DeliveryItem, Order, Product, Customer } from '../types/api';
@@ -340,27 +340,50 @@ export default function Deliveries() {
     { title: '创建日期', dataIndex: 'created_at', key: 'created_at', width: 110,
       render: (v: string) => (v || '').split('T')[0] || v || '-' },
     {
-      title: '操作', key: 'action', width: 320, fixed: 'right' as const,
-      render: (_: any, r: Delivery) => (
-        <Space size={4} wrap>
-          <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => handleViewDetail(r)}>详情</Button>
-          {r.status === '待发货' && (
-            <Button size="small" type="link" icon={<CarOutlined />} onClick={() => handleShip(r)}>发货</Button>
-          )}
-          {r.status === '已发货' && (
-            <Button size="small" type="link" icon={<CheckCircleOutlined />} onClick={() => handleSign(r)}>签收</Button>
-          )}
-          <Button size="small" type="link" icon={<PrinterOutlined />} onClick={() => handlePrint(r)}>打印</Button>
-          {r.status === '待发货' && (
-            <>
-              <Button size="small" type="link" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
-              <Popconfirm title="确认删除？" okText="删除" cancelText="取消" onConfirm={() => handleDelete(r)}>
-                <Button size="small" type="link" danger icon={<DeleteOutlined />}>删除</Button>
-              </Popconfirm>
-            </>
-          )}
-        </Space>
-      ),
+      title: '操作', key: 'action', width: 220, fixed: 'right' as const,
+      render: (_: any, r: Delivery) => {
+        const moreItems = [
+          { key: 'print', label: '打印', icon: <PrinterOutlined /> },
+          ...(r.status === '待发货' ? [
+            { key: 'edit', label: '编辑', icon: <EditOutlined /> },
+            { key: 'delete', label: '删除', icon: <DeleteOutlined />, danger: true },
+          ] : []),
+        ];
+        return (
+          <Space size={4}>
+            <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => handleViewDetail(r)}>详情</Button>
+            {r.status === '待发货' && (
+              <Button size="small" type="link" icon={<CarOutlined />} onClick={() => handleShip(r)}>发货</Button>
+            )}
+            {r.status === '已发货' && (
+              <Button size="small" type="link" icon={<CheckCircleOutlined />} onClick={() => handleSign(r)}>签收</Button>
+            )}
+            <Dropdown
+              trigger={['click']}
+              placement="bottomRight"
+              menu={{
+                items: moreItems,
+                onClick: ({ key }) => {
+                  if (key === 'print') handlePrint(r);
+                  if (key === 'edit') handleEdit(r);
+                  if (key === 'delete') {
+                    Modal.confirm({
+                      title: '确认删除此发货单？',
+                      content: r.delivery_no || `#${r.id}`,
+                      okText: '删除',
+                      cancelText: '取消',
+                      okButtonProps: { danger: true },
+                      onOk: () => handleDelete(r),
+                    });
+                  }
+                },
+              }}
+            >
+              <Button size="small" type="link" icon={<MoreOutlined />} style={{ paddingRight: 4 }}>更多</Button>
+            </Dropdown>
+          </Space>
+        );
+      },
     },
   ];
 

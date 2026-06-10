@@ -502,3 +502,43 @@ P1 修复优先级：先修 `/deliveries` 的 `ID:null` 和所有表格 `nowrap/
 - 发货管理待发货行仍有 5 个操作按钮，可后续同样收纳为 `详情 / 发货 / 更多`。
 - 财务页 `更多` 菜单靠右边缘，窄屏时可再调 dropdown placement 或操作列 padding。
 
+---
+
+## P2 表格操作列打磨（2026-06-10，仅测试服）
+
+### 背景
+
+P1 修复后剩余 P2：
+
+- 发货管理待发货行仍有 5 个操作按钮，行高/密度有继续优化空间。
+- 财务页 `更多` 菜单靠近右边缘，窄屏时存在裁切风险。
+
+### 修复
+
+1. 发货管理操作列
+   - 待发货：`详情 / 发货 / 更多`
+   - 已发货：`详情 / 签收 / 更多`
+   - 已签收：`详情 / 更多`
+   - `更多` 包含打印；待发货额外包含编辑、删除。
+   - 删除使用 `Modal.confirm`，避免 Dropdown 中嵌套 Popconfirm。
+
+2. 财务页 Dropdown 边距
+   - 操作列宽度 190 → 210。
+   - Dropdown 设置 `placement=bottomRight`。
+   - `更多` 按钮增加右侧 padding。
+
+### 验收
+
+- `npx tsc --noEmit -p apps/web/tsconfig.json`：PASS
+- AntD 图标审计：PASS
+- `npx vite build`：PASS
+- 测试服部署：PASS（`/var/www/paperbox-erp/` + nginx reload）
+- 发货管理 browser_vision：PASS，菜单 `打印/编辑/删除` 完整显示，未裁切
+- 应收管理 browser_vision：PASS，菜单 `冲正/编辑/删除` 完整显示，右侧有留白
+- 应付管理 browser_vision：PASS，空态/表头/新建入口正常
+- 浏览器 console：0 errors / 0 messages
+
+### 注意
+
+- 本轮按用户要求仅部署测试服，未同步正式服。
+

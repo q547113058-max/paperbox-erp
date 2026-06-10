@@ -254,7 +254,7 @@ export default function FinanceRecordsPage({ type, title, partyLabel, partyPlace
     { title: '结清时间', dataIndex: 'paid_at', key: 'paid_at', width: 150, render: fmtDate },
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 150, render: fmtDate },
     {
-      title: '操作', key: 'action', width: 190, fixed: 'right' as const,
+      title: '操作', key: 'action', width: 210, fixed: 'right' as const,
       render: (_: any, r: FinanceRecord) => {
         const moreItems = [
           ...(r.status !== '已冲正' ? [{ key: 'cancel', label: '冲正', icon: <StopOutlined />, danger: true }] : []),
@@ -270,6 +270,7 @@ export default function FinanceRecordsPage({ type, title, partyLabel, partyPlace
             {moreItems.length > 0 && (
               <Dropdown
                 trigger={['click']}
+                placement="bottomRight"
                 menu={{
                   items: moreItems,
                   onClick: ({ key }) => {
@@ -281,7 +282,7 @@ export default function FinanceRecordsPage({ type, title, partyLabel, partyPlace
                   },
                 }}
               >
-                <Button size="small" type="link" icon={<MoreOutlined />}>更多</Button>
+                <Button size="small" type="link" icon={<MoreOutlined />} style={{ paddingRight: 4 }}>更多</Button>
               </Dropdown>
             )}
           </Space>
