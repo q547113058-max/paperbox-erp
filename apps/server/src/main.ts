@@ -2,10 +2,21 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.setGlobalPrefix('api');
+
+  // 静态前端（生产构建）
+  app.useStaticAssets(join(__dirname, '..', '..', 'web', 'dist'));
+  // SPA fallback
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(join(__dirname, '..', '..', 'web', 'dist', 'index.html'));
+  });
   app.enableCors({
     origin: true,
     credentials: true,
