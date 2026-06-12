@@ -6,6 +6,173 @@
 
 body {
   font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #f5f5f5;
-  color: #262626;
+  background: #f8fafc;
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== 全局过渡动画 ===== */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: 0.15s;
+  transition-timing-function: ease-in-out;
+}
+
+/* 卡片悬浮效果 */
+.ant-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease !important;
+}
+.ant-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+  transform: translateY(-1px);
+}
+
+/* 表格行悬浮高亮 */
+.ant-table-tbody > tr:hover > td {
+  background: #f1f5f9 !important;
+}
+
+/* 按钮悬浮微动 */
+.ant-btn:not(.ant-btn-text):not([disabled]):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+.ant-btn:active {
+  transform: translateY(0);
+}
+
+/* 输入框聚焦发光 */
+.ant-input:focus,
+.ant-input-focused,
+.ant-select-focused .ant-select-selector,
+.ant-picker-focused {
+  box-shadow: 0 0 0 2px rgba(44, 82, 130, 0.15) !important;
+}
+
+/* 深色侧边栏菜单样式覆盖 */
+.ant-menu-dark {
+  background: transparent !important;
+}
+.ant-menu-dark .ant-menu-item {
+  margin: 2px 8px !important;
+  border-radius: 6px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+}
+.ant-menu-dark .ant-menu-item-selected {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #fbbf24 !important;
+}
+.ant-menu-dark .ant-menu-item:hover:not(.ant-menu-item-selected) {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+.ant-menu-dark .ant-menu-item .ant-menu-item-icon {
+  font-size: 16px;
+  opacity: 0.85;
+}
+.ant-menu-dark .ant-menu-item-selected .ant-menu-item-icon {
+  opacity: 1;
+  color: #fbbf24;
+}
+
+/* 面包屑样式 */
+.ant-breadcrumb {
+  font-size: 13px;
+}
+.ant-breadcrumb a {
+  color: #64748b !important;
+}
+.ant-breadcrumb a:hover {
+  color: #2c5282 !important;
+}
+
+/* Modal 圆角 + 阴影 */
+.ant-modal-content {
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+.ant-modal-header {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 24px !important;
+}
+.ant-modal-footer {
+  border-top: 1px solid #f0f0f0;
+  padding: 12px 24px !important;
+}
+
+/* Tag 圆角统一 */
+.ant-tag {
+  border-radius: 4px !important;
+  font-size: 12px;
+  padding: 2px 8px;
+}
+
+/* 空状态美化 */
+.ant-empty-description {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* ===== 滚动条美化 ===== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 侧边栏滚动条（深色） */
+.ant-layout-sider ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+.ant-layout-sider ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ===== 选中态高亮 ===== */
+::selection {
+  background: rgba(44, 82, 130, 0.15);
+  color: #1e293b;
+}
+
+/* ===== 响应式辅助 ===== */
+@media (max-width: 768px) {
+  .ant-table {
+    font-size: 13px;
+  }
+  .ant-modal {
+    max-width: 95vw;
+    margin: 8px auto;
+  }
+}
+
+/* KPI 卡片顶部色条动画 */
+.ant-card[style*="border-top"] {
+  position: relative;
+  overflow: hidden;
+}
+.ant-card[style*="border-top"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: inherit;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+.ant-card[style*="border-top"]:hover::before {
+  opacity: 1;
 }

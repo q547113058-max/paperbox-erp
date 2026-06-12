@@ -41,6 +41,8 @@ import { UploadsModule } from './uploads/uploads.module';
 import { ExcelModule } from './excel/excel.module';
 import { PrintModule } from './print/print.module';
 import { ReportModule } from './report/report.module';
+import { PurchaseReqModule } from './purchase_req/purchase_req.module';
+import { ImageLibraryModule } from './image_library/image_library.module';
 import { Account } from './entities/accounts';
 import { ActionLog } from './entities/action_logs';
 import { ColorPrint } from './entities/color_prints';
@@ -143,6 +145,8 @@ const DB_PATH = '/data/erp-data/erp-system/erp.db';
     ExcelModule,
     PrintModule,
     ReportModule,
+    PurchaseReqModule,
+    ImageLibraryModule,
   ],
 })
 export class AppModule implements OnModuleInit, OnModuleDestroy {

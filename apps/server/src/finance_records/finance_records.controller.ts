@@ -9,6 +9,14 @@ import { RolesGuard } from '../auth/roles.guard';
 export class FinanceRecordController {
   constructor(private readonly service: FinanceRecordService) {}
   @Get() findAll() { return this.service.findAll(); }
+
+  /**
+   * 财务汇总（应收/应付/收入/支出/利润）
+   * GET /api/finance-records/summary
+   */
+  @Get('summary')
+  summary() { return this.service.summary(); }
+
   @Get(':id') findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
   @Post()
   @Roles('boss', 'finance')
@@ -19,4 +27,22 @@ export class FinanceRecordController {
   @Delete(':id')
   @Roles('boss', 'finance')
   remove(@Param('id', ParseIntPipe) id: number) { return this.service.remove(id); }
+
+  /**
+   * 结算（标记已结清）
+   * PUT /api/finance-records/:id/settle
+   */
+  @Put(':id/settle')
+  @Roles('boss', 'finance')
+  settle(@Param('id', ParseIntPipe) id: number) { return this.service.settle(id); }
+
+  /**
+   * 冲正（标记已冲正 + 写反向记录）
+   * POST /api/finance-records/:id/cancel
+   */
+  @Post(':id/cancel')
+  @Roles('boss', 'finance')
+  cancel(@Param('id', ParseIntPipe) id: number, @Body() body: { reason: string; username?: string }) {
+    return this.service.cancel(id, body);
+  }
 }
