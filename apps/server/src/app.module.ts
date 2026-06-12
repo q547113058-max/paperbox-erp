@@ -81,7 +81,7 @@ import { WorkshopInventory } from './entities/workshop_inventory';
 import { WorkshopInventoryLog } from './entities/workshop_inventory_logs';
 import { Company } from './entities/company';
 
-const DB_PATH = '/data/erp-data/erp-system/erp.db';
+const DB_PATH = process.env.DB_PATH || '/home/ubuntu/data/erp-system/erp.db';
 
 @Module({
   imports: [
