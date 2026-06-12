@@ -49,15 +49,19 @@ paperbox-erp/
 
 ### 测试服: nginx 独立服务
 
+```
 浏览器 -> nginx :3003
   /api/* -> proxy_pass -> NestJS :3005
   /*     -> /var/www/paperbox-erp/index.html
+```
 
 ### 正式服: NestJS 内嵌静态服务
 
+```
 浏览器 -> NestJS :3005
   /api/* -> Controller 处理
   /*     -> express.static(apps/web/dist/)
+```
 
 ## 端口分配
 
@@ -107,8 +111,7 @@ paperbox-erp/
 | 用户 | root | ubuntu |
 | 路径 | /root/workspace/paperbox-erp/ | /home/ubuntu/data/erp-new/ |
 | 前端入口 | nginx :3003 | NestJS :3005 |
-| 前端部署路径 | /var/www/paperbox-erp/ | apps/web/dist/ |
-| 构建后操作 | bash scripts/deploy-frontend.sh | 无需 (后端自动读取) |
+| 前端路径 | /var/www/paperbox-erp/ | apps/web/dist/ |
+| 构建后 | deploy-frontend.sh | 无需操作 |
 | 进程管理 | 手动后台 | screen 会话 |
 | nginx | 已配置 | 无 |
-| PM2 | 未使用 | 未使用 |

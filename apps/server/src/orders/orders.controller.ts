@@ -42,4 +42,14 @@ export class OrdersController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);
   }
+
+  /**
+   * 手动结单（更新订单明细已发货数量）
+   * PUT /api/orders/items/:id/manual-close
+   */
+  @Put('items/:id/manual-close')
+  @Roles('boss', 'sales', 'warehouse')
+  manualCloseItem(@Param('id', ParseIntPipe) id: number, @Body() body: { delivered_qty: number }) {
+    return this.service.manualCloseItem(id, body);
+  }
 }

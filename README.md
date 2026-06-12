@@ -55,8 +55,6 @@ cd apps/web && npx vite build
 测试服开发 -> git commit [sync] -> GitHub -> 正式服 git pull -> vite build -> 验证
 ```
 
-详见 docs/deployment-production.md。
-
 ## 项目文档
 
 | 文档 | 说明 |

@@ -75,4 +75,18 @@ export class OrdersService {
     await this.orderRepo.delete(id);
     return { deleted: true };
   }
+
+  // ========== 补充：手动结单（旧系统 order-items/:id/manual-close） ==========
+
+  /**
+   * 手动结单（更新订单明细已发货数量）
+   * PUT /api/orders/items/:id/manual-close
+   */
+  async manualCloseItem(itemId: number, data: { delivered_qty: number }) {
+    const item = await this.itemRepo.findOne({ where: { id: itemId } });
+    if (!item) throw new NotFoundException(`订单明细 ${itemId} 不存在`);
+    item.delivered_qty = data.delivered_qty || item.quantity || 0;
+    await this.itemRepo.save(item);
+    return { success: true };
+  }
 }

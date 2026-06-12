@@ -10,7 +10,8 @@ module.exports = {
     path.join(__dirname, 'apps/server/src'),
   ],
   testMatch: [
-    '<rootDir>/apps/server/test/**/*.ts',
+    '<rootDir>/apps/server/test/**/*-spec.ts',
+    '<rootDir>/apps/server/test/**/*.spec.ts',
     '<rootDir>/apps/server/src/**/*.spec.ts',
   ],
   moduleNameMapper: {
