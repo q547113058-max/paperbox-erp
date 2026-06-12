@@ -1,137 +1,134 @@
-# 纸箱 ERP 重构项目 - AGENTS.md
+# 纸箱 ERP 重构项目 — AGENTS.md
 
-> 本文件是本项目子目录的 Agent 入口，**补充** `~/.hermes/skills/dw-skills-main/AGENTS.md` 的全局规则。
-> 必读：dw-skills 阶段 0 → 1 → 2 → 3 → 4 → 5 → 6。
+> 本文件是该项目的 Agent 入口, 补充 ~/.hermes/skills/dw-skills-main/AGENTS.md 的全局规则.
+> 必读: dw-skills 阶段 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6.
 
-## 项目路径
+## 环境速查
 
-- 仓库根：`/root/workspace/paperbox-erp/`
-- 后端：`apps/server/`（NestJS + TypeORM + better-sqlite3）
-- 前端：`apps/web/`（Vite + React + AntD + Noto Sans SC）
-- 数据库：`/data/erp-data/erp-system/erp.db`（`synchronize: false`，不迁移）
-- 计划：`/root/.hermes/plans/paperbox-erp-refactor.md`
-- 日志：`dev-logs/YYYY-MM-DD.md`
-- 文档：`docs/`
+| 环境 | IP | 用户 | 路径 | 后端端口 | 前端入口 |
+|------|-----|------|------|----------|----------|
+| 测试服 | 193.112.246.85 | root | /root/workspace/paperbox-erp/ | 3005 | nginx :3003 -> /var/www/paperbox-erp/ |
+| 正式服 | 42.193.149.154 | ubuntu | /home/ubuntu/data/erp-new/ | 3005 | NestJS express.static :3005 |
 
-## 必读文件（启动检查清单）
+## 目录结构
 
-1. `dev-logs/YYYY-MM-DD.md` — 当天记录
-2. `/root/.hermes/plans/paperbox-erp-refactor.md` — 总计划
-3. `docs/project-requirements.md` — 已确认需求
-4. `docs/design-tokens.md` — 主题/颜色/字体配置
-5. `git status && git branch --show-current && git log -5 --oneline` — 当前状态
+```
+/home/ubuntu/data/erp-new/
+├── AGENTS.md                   # 本文件
+├── apps/
+│   ├── server/                 # NestJS + TypeORM + better-sqlite3
+│   │   └── src/
+│   │       ├── main.ts         # 入口 (含 express.static 服务前端)
+│   │       ├── app.module.ts   # 模块注册 + SQLite WAL 配置
+│   │       ├── entities/       # TypeORM Entity (raw FK, 无 @ManyToOne)
+│   │       ├── services/       # 业务逻辑
+│   │       └── controllers/    # API 路由
+│   └── web/                    # Vite + React + AntD
+│       └── src/
+│           ├── pages/          # 16 个业务页面
+│           ├── components/     # 共享组件
+│           └── types/          # TypeScript 类型定义
+├── docs/                       # 项目文档
+├── dev-logs/                   # 每日开发日志
+├── scripts/                    # 运维脚本
+└── ecosystem.config.cjs        # PM2 配置 (备用)
 
-## 端口分配（重要）
+## 端口分配
 
-| 服务 | 端口 | 进程 |
-|------|------|------|
-| NestJS 后端 | **3005** | `node -r ts-node/register src/main.ts` |
-| Vite 前端 dev | **5174** | `npx vite` |
-| 旧纸箱 Express | ~~3001~~ | PM2 `paperbox-erp`（不冲突，但不要误杀） |
-| 鸡爪 ERP | 3001 / 5173 | 独立项目（不混淆） |
+| 服务 | 测试服 | 正式服 |
+|------|--------|--------|
+| NestJS 后端 | 3005 | 3005 |
+| 前端入口 | nginx :3003 | NestJS :3005 (express.static) |
+| 旧 ERP (Express) | 3001 | 3001 |
 
-## 反复踩过的坑（必须预防）
+## 数据库
 
-### 坑 #1: 端口 3003 被旧 Express 进程抢占
-- **触发**：`curl http://localhost:3003/api/...` 返回 401 / 500 且 `X-Powered-By: Express`
-- **必须行为**：`ss -tlnp | grep 3003` 确认 pid 后 `kill <pid>` 旧 Express
-- **禁止**：看到 401 就以为是 JWT 问题，先检查 `X-Powered-By` header
+- 路径: /home/ubuntu/data/erp-system/erp.db
+- 模式: SQLite WAL (journal_mode=WAL, synchronous=NORMAL, busy_timeout=5000)
+- TypeORM: synchronize: false
+- 账号: boss/demo 和 demo/demo
 
-### 坑 #2: TypeORM Entity 缺少 @ManyToOne 关系
-- **触发**：在 service 中使用 `relations: ['xxx']` 但 Entity 没声明该关系
-- **症状**：`EntityPropertyNotFoundError: Property "xxx" was not found in "Xxx"`
-- **必须行为**：Entity 全部使用 raw foreign key（`customer_id: number`），service 不写 `relations`
-- **禁止**：使用 `relations: [...]` 除非 Entity 真的有 @ManyToOne / @OneToMany 装饰器
-
-### 坑 #3: better-sqlite3 native binding 路径
-- **触发**：`Error: Could not locate the bindings file ... better_sqlite3.node`
-- **必须行为**：
-  ```bash
-  # 1. 重建
-  npm rebuild better-sqlite3 --build-from-source
-  # 2. 同时复制到全局（cronjob / 新 Node 进程能加载）
-  mkdir -p /root/node_modules/better-sqlite3/lib/binding/node-v127-linux-x64
-  cp node_modules/better-sqlite3/build/Release/better_sqlite3.node \
-     /root/node_modules/better-sqlite3/lib/binding/node-v127-linux-x64/
-  # 3. 或者改用 symlink
-  mkdir -p node_modules/better-sqlite3/lib/binding/node-v127-linux-x64
-  ln -sf ../../build/Release/better_sqlite3.node \
-         node_modules/better-sqlite3/lib/binding/node-v127-linux-x64/
-  ```
-- **禁止**：假设 `npm install` 后 native binding 就绪
-
-### 坑 #4: accounts 表可能是空的
-- **触发**：JWT 登录返回 "用户名或密码错误"
-- **必须行为**：
-  ```sql
-  SELECT COUNT(*) FROM accounts;
-  -- 如果 0，注入测试账号：
-  -- username: 'boss' / password: 'demo' (bcrypt hash)
-  -- username: 'demo' / password: 'demo' (bcrypt hash)
-  ```
-
-### 坑 #6: SQLite 数据不持久化（重启后丢失）
-- **触发**：编辑/创建数据后重启 server，数据被还原
-- **症状**：`erp.db` 修改时间不变，`erp.db-wal` 有更新但未 checkpoint
-- **必须行为**：在 AppModule 中配置 SQLite pragma
-  ```typescript
-  // app.module.ts - OnModuleInit
-  const db = new Database(DB_PATH);
-  db.pragma('journal_mode = WAL');
-  db.pragma('synchronous = NORMAL');
-  db.pragma('busy_timeout = 5000');
-  db.close();
-  ```
-- **禁止**：依赖 TypeORM 默认配置（不启用 WAL）
-
-### 坑 #5: 前端 API 路径前缀
-- **触发**：前端 `/api/auth/login` 404
-- **必须行为**：`main.ts` 中 `app.setGlobalPrefix('api')`（已就位）
-- **vite.config.ts**：`proxy: { '/api': { target: 'http://localhost:3003' } }`
-
-## 常用命令
+## 启动/停止
 
 ```bash
-# 启动后端
-cd /root/workspace/paperbox-erp/apps/server && \
-  node -r ts-node/register src/main.ts &
+# 正式服 (screen 会话中)
+screen -r erp-server
+# 或重新启动:
+cd /home/ubuntu/data/erp-new/apps/server
+npx ts-node-dev --transpile-only --respawn src/main.ts
 
-# 启动前端 dev
-cd /root/workspace/paperbox-erp/apps/web && npx vite --host 0.0.0.0 --port 5174 &
-
-# TypeScript 编译检查
-npx tsc --noEmit -p apps/server/tsconfig.json
-
-# 前端构建
-cd apps/web && npx vite build
-
-# 登录
-curl -s http://localhost:3003/api/auth/login -X POST \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"boss","password":"demo"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])"
-
-# 健康检查
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3003/api/products
+# 测试服
+cd /root/workspace/paperbox-erp/apps/server
+npx ts-node-dev --transpile-only --respawn src/main.ts
 ```
 
-## 质量门禁（交付前必跑）
+## 构建前端
 
-按 dw-skills 09 文档，一键执行：
 ```bash
-npm run typecheck && npm test && npm run lint && npm run build && bash scripts/smoke.sh
+# 正式服: 构建到 apps/web/dist/, NestJS express.static 直接服务
+cd /home/ubuntu/data/erp-new/apps/web && npx vite build
+
+# 测试服: 构建后部署到 nginx 目录
+cd /root/workspace/paperbox-erp/apps/web && npx vite build
+bash /root/workspace/paperbox-erp/scripts/deploy-frontend.sh
 ```
 
-| 检查项 | 命令 | 状态 |
-|--------|------|------|
-| 类型检查 | `npm run typecheck` | ✅ 0 errors |
-| 单元测试 | `npm test` | ✅ 15 passed |
-| ESLint | `npm run lint` | ✅ 0 errors, 27 warnings |
-| 前端构建 | `npm run build` | ✅ 代码分割 |
-| 冒烟测试 | `bash scripts/smoke.sh` | ✅ 12/12 passed |
+## 同步流程 (测试服 -> 正式服)
 
-## 当前会话质量等级
+```bash
+# 1. 测试服提交
+cd /root/workspace/paperbox-erp
+git add <files> && git commit -m "[sync] 描述"
 
-最近一次完成（2026-06-09）：**A-**
-- 已做：脚手架 / TypeORM entities / JWT 鉴权 / CRUD 模块 / 前端 11 页面 / 端到端验证 / ESLint / 单元测试 / smoke 测试
-- 已补：project-requirements.md / refactor-findings / design-tokens / dev-logs
-- 遗留：27 个 ESLint warnings（无 error）/ 部分页面只有只读列表
+# 2. 正式服拉取
+ssh ubuntu@42.193.149.154 'cd /home/ubuntu/data/erp-new && git pull'
+
+# 3. 正式服构建前端
+ssh ubuntu@42.193.149.154 'cd /home/ubuntu/data/erp-new/apps/web && npx vite build'
+
+# 4. 验证
+curl -s -o /dev/null -w "%{http_code}" http://42.193.149.154:3005/
+```
+
+## 反复踩过的坑
+
+### 1: 前端未构建 -> 空白页
+- 症状: :3005 返回 404 或无前端页面
+- 修复: cd apps/web && npx vite build
+
+### 2: index.html 与 JS hash 不匹配
+- 症状: Expected JavaScript module but got text/html
+- 修复: 整个 dist/ 目录一次性构建, 不要分开复制文件
+
+### 3: SQLite WAL 未启用
+- 症状: 编辑数据后重启丢失
+- 修复: AppModule.onModuleInit 中已配置 pragma
+
+### 4: better-sqlite3 native binding
+- 症状: Could not locate the bindings file
+- 修复: npm rebuild better-sqlite3 --build-from-source
+
+### 5: accounts 表为空
+- 症状: 登录返回用户名或密码错误
+- 修复: seed boss/demo 账号
+
+### 6: API 路径下划线 vs 连字符
+- 症状: /api/color-prints 404, 后端注册的是 color_prints
+- 修复: 前端路径必须与 @Controller 装饰器完全一致
+
+### 7: Controller 文件存在但未注册到 AppModule
+- 症状: @Controller 正确但仍 404
+- 修复: 检查 app.module.ts imports 数组
+
+## 质量门禁
+
+```bash
+# 测试服 (完整):
+cd /root/workspace/paperbox-erp
+npm run typecheck && npm test && npm run lint && npm run build
+
+# 正式服 (基础):
+cd /home/ubuntu/data/erp-new
+curl -s http://localhost:3005/api/products?limit=1   # API
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3005/   # 前端
+```
