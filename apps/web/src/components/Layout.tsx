@@ -35,6 +35,7 @@ const AMBER = '#d97706';
 
 // 角色权限配置
 const ROLE_PERMISSIONS: Record<string, string[]> = {
+  admin: ['/', '/products', '/orders', '/purchases', '/warehouse', '/deliveries', '/finance', '/receivables', '/payables', '/customers', '/suppliers', '/personnel', '/work_orders', '/reconciliation_bills', '/knife_dies', '/color_prints', '/settings', '/action_logs', '/search'],
   boss: ['/', '/products', '/orders', '/purchases', '/warehouse', '/deliveries', '/finance', '/receivables', '/payables', '/customers', '/suppliers', '/personnel', '/work_orders', '/reconciliation_bills', '/knife_dies', '/color_prints', '/settings', '/action_logs', '/search'],
   finance: ['/', '/orders', '/purchases', '/finance', '/receivables', '/payables', '/customers', '/suppliers', '/reconciliation_bills'],
   warehouse: ['/', '/products', '/orders', '/purchases', '/warehouse', '/deliveries', '/work_orders', '/knife_dies', '/color_prints', '/materials'],
