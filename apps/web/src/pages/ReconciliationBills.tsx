@@ -191,6 +191,20 @@ export default function ReconciliationBills() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>对账管理</h2>
+      </div>
+
+      {/* Summary Bar */}
+      <div style={{
+        display: 'flex', gap: 16, marginBottom: 16, padding: '12px 16px',
+        background: '#fafafa', borderRadius: 6, fontSize: 14, flexWrap: 'wrap'
+      }}>
+        <span>总金额：<strong style={{ color: '#2c5282' }}>¥{data.reduce((s, b) => s + (b.total_amount || 0), 0).toLocaleString()}</strong></span>
+        <span>已对账：<strong style={{ color: '#389e0d' }}>{data.filter(b => b.status === '已确认').length}</strong></span>
+        <span>未对账：<strong style={{ color: '#d97706' }}>{data.filter(b => b.status === '待确认').length}</strong></span>
+        <span>已取消：<strong style={{ color: '#8c8c8c' }}>{data.filter(b => b.status === '已取消').length}</strong></span>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Space>
           <Input placeholder="搜索单号/客户名" value={keyword} onChange={(e) => setKeyword(e.target.value)} style={{ width: 200 }} allowClear />
           <Button type="primary" onClick={openGenerate} style={{ background: '#2c5282', borderColor: '#2c5282' }}>生成对账单</Button>

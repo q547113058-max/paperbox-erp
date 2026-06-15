@@ -38,4 +38,10 @@ export class ReportController {
   async getCustomerReport() {
     return this.reportService.getCustomerReport();
   }
+
+  @Get('dashboard')
+  @Roles('boss', 'admin', 'finance', 'sales', 'warehouse')
+  async getDashboardData(@Query('date') date?: string) {
+    return this.reportService.getDashboardData(date);
+  }
 }

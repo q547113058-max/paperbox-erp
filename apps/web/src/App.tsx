@@ -13,7 +13,6 @@ const Orders = lazy(() => import('./pages/Orders'));
 const Purchases = lazy(() => import('./pages/Purchases'));
 const Warehouse = lazy(() => import('./pages/Warehouse'));
 const Deliveries = lazy(() => import('./pages/Deliveries'));
-const Finance = lazy(() => import('./pages/Finance'));
 const Receivables = lazy(() => import('./pages/Receivables'));
 const Payables = lazy(() => import('./pages/Payables'));
 const Customers = lazy(() => import('./pages/Customers'));
@@ -27,6 +26,17 @@ const ColorPrints = lazy(() => import('./pages/ColorPrints'));
 const GlobalSearch = lazy(() => import('./pages/GlobalSearch'));
 const Settings = lazy(() => import('./pages/Settings'));
 const ActionLogs = lazy(() => import('./pages/ActionLogs'));
+
+// 新增：单据列表页面
+const OrderList = lazy(() => import('./pages/OrderList'));
+const PurchaseList = lazy(() => import('./pages/PurchaseList'));
+const OutsourcingOrderList = lazy(() => import('./pages/OutsourcingOrderList'));
+const WarehouseReceiptList = lazy(() => import('./pages/WarehouseReceiptList'));
+const DeliveryList = lazy(() => import('./pages/DeliveryList'));
+
+// 新增：财务记录页面
+const SupplierReconciliation = lazy(() => import('./pages/SupplierReconciliation'));
+const AccountsReceivable = lazy(() => import('./pages/AccountsReceivable'));
 
 // 加载中组件 — 表格骨架（避免白屏闪烁，dw-skills §04 第 6 条）
 const Loading = () => <TableSkeleton rows={8} columns={6} />;
@@ -56,7 +66,6 @@ export default function App() {
                       <Route path="/purchases" element={<Purchases />} />
                       <Route path="/warehouse" element={<Warehouse />} />
                       <Route path="/deliveries" element={<Deliveries />} />
-                      <Route path="/finance" element={<Finance />} />
                       <Route path="/receivables" element={<Receivables />} />
                       <Route path="/payables" element={<Payables />} />
                       <Route path="/customers" element={<Customers />} />
@@ -70,6 +79,15 @@ export default function App() {
                       <Route path="/search" element={<GlobalSearch />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/action_logs" element={<ActionLogs />} />
+                      {/* 单据列表 */}
+                      <Route path="/orders/list" element={<OrderList />} />
+                      <Route path="/purchases/list" element={<PurchaseList />} />
+                      <Route path="/outsourcing_orders/list" element={<OutsourcingOrderList />} />
+                      <Route path="/warehouse/list" element={<WarehouseReceiptList />} />
+                      <Route path="/deliveries/list" element={<DeliveryList />} />
+                      {/* 财务记录 */}
+                      <Route path="/supplier_reconciliation" element={<SupplierReconciliation />} />
+                      <Route path="/accounts_receivable" element={<AccountsReceivable />} />
                     </Routes>
                   </Suspense>
                 </Layout>
