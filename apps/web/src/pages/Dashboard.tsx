@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Card, Row, Col, Statistic, Table, Tag, Empty, Segmented, DatePicker, Spin } from 'antd';
-import { WarningOutlined, CarOutlined, DollarOutlined, TrophyOutlined, ShoppingCartOutlined, ArrowUpOutlined, ArrowDownOutlined, MinusOutlined } from '@ant-design/icons';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
+import { WarningOutlined, CarOutlined, TrophyOutlined, ArrowUpOutlined, ArrowDownOutlined, MinusOutlined } from '@ant-design/icons';
+// import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
 import type { Order, Product, Delivery, Customer } from '../types/api';
 import api from '../utils/axios';
 
@@ -21,9 +21,6 @@ interface DashboardData {
   totalProducts: number;
   lowStock: number;
 }
-
-const DONUT_COLORS = ['#2c5282', '#e8e8e8'];
-const CHART_COLORS = { orders: '#2c5282', purchases: '#d97706', profit: '#389e0d' };
 
 function fmtWan(v: number): string {
   if (v >= 10000) return (v / 10000).toFixed(2) + '万';
@@ -109,11 +106,6 @@ export default function Dashboard() {
   ];
 
   // 环形图数据
-  const donutData = dashboard ? [
-    { name: '已收款', value: dashboard.customerAccounts.monthCollected },
-    { name: '未收', value: Math.max(0, dashboard.customerAccounts.totalAR - dashboard.customerAccounts.monthCollected) },
-  ] : [];
-
   const purchaseMom = dashboard ? formatPercent(dashboard.purchase.mom) : { color: '', icon: null, text: '' };
   const orderMom = dashboard ? formatPercent(dashboard.order.mom) : { color: '', icon: null, text: '' };
 
@@ -241,24 +233,14 @@ export default function Dashboard() {
               </Col>
               <Col span={6}>
                 <Card title="当月收款" size="small">
-                  {donutData[0]?.value > 0 || donutData[1]?.value > 0 ? (
-                    <div style={{ textAlign: 'center' }}>
-                      <ResponsiveContainer width="100%" height={180}>
-                        <PieChart>
-                          <Pie data={donutData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} dataKey="value">
-                            {donutData.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}
-                          </Pie>
-                          <Tooltip formatter={(v: number) => `¥${v.toLocaleString()}`} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div style={{ marginTop: -30, fontSize: 18, fontWeight: 600, color: '#2c5282' }}>
-                        ¥{dashboard.customerAccounts.monthCollected.toLocaleString()}
-                      </div>
-                      <div style={{ fontSize: 12, color: '#8c8c8c' }}>
-                        应收 ¥{fmtWan(dashboard.customerAccounts.totalAR)} | 已收 ¥{dashboard.customerAccounts.totalPaid.toLocaleString()}
-                      </div>
+                  <div style={{ textAlign: 'center', padding: 20 }}>
+                    <div style={{ fontSize: 24, fontWeight: 600, color: '#2c5282' }}>
+                      ¥{dashboard.customerAccounts.monthCollected.toLocaleString()}
                     </div>
-                  ) : <Empty description="暂无收款数据" />}
+                    <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 8 }}>
+                      应收 ¥{fmtWan(dashboard.customerAccounts.totalAR)} | 已收 ¥{dashboard.customerAccounts.totalPaid.toLocaleString()}
+                    </div>
+                  </div>
                 </Card>
               </Col>
               <Col span={6}>
@@ -274,18 +256,18 @@ export default function Dashboard() {
             <Row gutter={16}>
               <Col span={16}>
                 <Card title="月度趋势" size="small">
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={dashboard.monthlyTrend}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" fontSize={12} />
-                      <YAxis fontSize={12} />
-                      <Tooltip formatter={(v: number) => `¥${v.toLocaleString()}`} />
-                      <Legend />
-                      <Bar dataKey="orders" name="订单" fill={CHART_COLORS.orders} radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="purchases" name="采购" fill={CHART_COLORS.purchases} radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="profit" name="毛利" fill={CHART_COLORS.profit} radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <Table
+                    rowKey="month"
+                    size="small"
+                    pagination={false}
+                    dataSource={dashboard.monthlyTrend}
+                    columns={[
+                      { title: '月份', dataIndex: 'month', key: 'month' },
+                      { title: '订单', dataIndex: 'orders', key: 'orders', render: (v: number) => `¥${v.toLocaleString()}` },
+                      { title: '采购', dataIndex: 'purchases', key: 'purchases', render: (v: number) => `¥${v.toLocaleString()}` },
+                      { title: '毛利', dataIndex: 'profit', key: 'profit', render: (v: number) => `¥${v.toLocaleString()}` },
+                    ]}
+                  />
                 </Card>
               </Col>
               <Col span={8}>
