@@ -19,6 +19,7 @@ const Customers = lazy(() => import('./pages/Customers'));
 const Suppliers = lazy(() => import('./pages/Suppliers'));
 const Personnel = lazy(() => import('./pages/Personnel'));
 const WorkOrders = lazy(() => import('./pages/WorkOrders'));
+const ProductionDashboard = lazy(() => import('./pages/ProductionDashboard'));
 const OutsourcingOrders = lazy(() => import('./pages/OutsourcingOrders'));
 const ReconciliationBills = lazy(() => import('./pages/ReconciliationBills'));
 const KnifeDies = lazy(() => import('./pages/KnifeDies'));
@@ -72,6 +73,7 @@ export default function App() {
                       <Route path="/suppliers" element={<Suppliers />} />
                       <Route path="/personnel" element={<Personnel />} />
                       <Route path="/work_orders" element={<WorkOrders />} />
+                      <Route path="/production" element={<ProductionDashboard />} />
                       <Route path="/outsourcing_orders" element={<OutsourcingOrders />} />
                       <Route path="/reconciliation_bills" element={<ReconciliationBills />} />
                       <Route path="/knife_dies" element={<KnifeDies />} />

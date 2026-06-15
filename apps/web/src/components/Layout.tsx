@@ -23,6 +23,7 @@ import {
   DollarOutlined,
   PlusCircleOutlined,
 } from '@ant-design/icons';
+import type { MenuProps } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth';
 import { BrandLogo } from './BrandLogo';
@@ -44,7 +45,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     '/orders/list', '/purchases/list', '/outsourcing_orders/list', '/warehouse/list', '/deliveries/list',
     '/supplier_reconciliation', '/reconciliation_bills', '/accounts_receivable', '/receivables', '/payables',
     '/products', '/customers', '/suppliers', '/personnel',
-    '/knife_dies', '/color_prints',
+    '/knife_dies', '/color_prints', '/work_orders', '/production',
     '/settings', '/action_logs', '/search',
   ],
   boss: [
@@ -53,7 +54,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     '/orders/list', '/purchases/list', '/outsourcing_orders/list', '/warehouse/list', '/deliveries/list',
     '/supplier_reconciliation', '/reconciliation_bills', '/accounts_receivable', '/receivables', '/payables',
     '/products', '/customers', '/suppliers', '/personnel',
-    '/knife_dies', '/color_prints',
+    '/knife_dies', '/color_prints', '/work_orders', '/production',
     '/settings', '/action_logs', '/search',
   ],
   finance: [
@@ -126,6 +127,8 @@ const allMenuItems = [
     type: 'group' as const,
     label: '生产',
     children: [
+      { key: '/production', icon: <DashboardOutlined />, label: '生产看板' },
+      { key: '/work_orders', icon: <UnorderedListOutlined />, label: '工单列表' },
       { key: '/knife_dies', icon: <ToolOutlined />, label: '刀模' },
       { key: '/color_prints', icon: <PictureOutlined />, label: '彩印' },
     ],
@@ -164,9 +167,11 @@ const PAGE_NAMES: Record<string, string> = {
   '/personnel': '人员管理',
   '/knife_dies': '刀模管理',
   '/color_prints': '彩印管理',
-  '/search': '全局搜索',
-  '/action_logs': '操作日志',
+  '/work_orders': '工单管理',
+  '/production': '生产看板',
   '/settings': '系统设置',
+  '/action_logs': '操作日志',
+  '/search': '全局搜索',
 };
 
 export function Layout({ children }: { children: React.ReactNode }) {
