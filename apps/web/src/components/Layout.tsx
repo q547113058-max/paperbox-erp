@@ -45,7 +45,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     '/orders/list', '/purchases/list', '/outsourcing_orders/list', '/warehouse/list', '/deliveries/list',
     '/supplier_reconciliation', '/reconciliation_bills', '/accounts_receivable', '/receivables', '/payables',
     '/products', '/customers', '/suppliers', '/personnel',
-    '/knife_dies', '/color_prints', '/work_orders', '/production',
+    '/knife_dies', '/color_prints', '/work_orders', '/production', '/inventory',
     '/settings', '/action_logs', '/search',
   ],
   boss: [
@@ -54,7 +54,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     '/orders/list', '/purchases/list', '/outsourcing_orders/list', '/warehouse/list', '/deliveries/list',
     '/supplier_reconciliation', '/reconciliation_bills', '/accounts_receivable', '/receivables', '/payables',
     '/products', '/customers', '/suppliers', '/personnel',
-    '/knife_dies', '/color_prints', '/work_orders', '/production',
+    '/knife_dies', '/color_prints', '/work_orders', '/production', '/inventory',
     '/settings', '/action_logs', '/search',
   ],
   finance: [
@@ -115,9 +115,16 @@ const allMenuItems = [
   },
   {
     type: 'group' as const,
+    label: '库存',
+    children: [
+      { key: '/inventory', icon: <InboxOutlined />, label: '库存总览' },
+      { key: '/products', icon: <AppstoreOutlined />, label: '产品' },
+    ],
+  },
+  {
+    type: 'group' as const,
     label: '基础数据',
     children: [
-      { key: '/products', icon: <AppstoreOutlined />, label: '产品' },
       { key: '/customers', icon: <TeamOutlined />, label: '客户' },
       { key: '/suppliers', icon: <TeamOutlined />, label: '供应商' },
       { key: '/personnel', icon: <SettingOutlined />, label: '人员' },
@@ -169,6 +176,7 @@ const PAGE_NAMES: Record<string, string> = {
   '/color_prints': '彩印管理',
   '/work_orders': '工单管理',
   '/production': '生产看板',
+  '/inventory': '库存总览',
   '/settings': '系统设置',
   '/action_logs': '操作日志',
   '/search': '全局搜索',

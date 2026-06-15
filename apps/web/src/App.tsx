@@ -24,6 +24,7 @@ const OutsourcingOrders = lazy(() => import('./pages/OutsourcingOrders'));
 const ReconciliationBills = lazy(() => import('./pages/ReconciliationBills'));
 const KnifeDies = lazy(() => import('./pages/KnifeDies'));
 const ColorPrints = lazy(() => import('./pages/ColorPrints'));
+const InventoryDashboard = lazy(() => import('./pages/InventoryDashboard'));
 const GlobalSearch = lazy(() => import('./pages/GlobalSearch'));
 const Settings = lazy(() => import('./pages/Settings'));
 const ActionLogs = lazy(() => import('./pages/ActionLogs'));
@@ -78,6 +79,7 @@ export default function App() {
                       <Route path="/reconciliation_bills" element={<ReconciliationBills />} />
                       <Route path="/knife_dies" element={<KnifeDies />} />
                       <Route path="/color_prints" element={<ColorPrints />} />
+                      <Route path="/inventory" element={<InventoryDashboard />} />
                       <Route path="/search" element={<GlobalSearch />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/action_logs" element={<ActionLogs />} />
