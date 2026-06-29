@@ -14,8 +14,6 @@ const STATUS_OPTIONS = ['正常生产', '已停产', '开发中', '打样'];
 /** 后端返回的完整 Product（含 entity 全部字段） */
 type FullProduct = Product & {
   option_image?: string;
-  price_incl_tax?: number;
-  price_excl_tax?: number;
   print_plate?: string;
   finished_spec?: string;
   box_shape?: string;
@@ -25,6 +23,7 @@ type FullProduct = Product & {
   surface_treatment?: string;
   processing?: string;
   accessories?: string;
+  board_material?: string;
   board_spec?: string;
   colors?: string;
   knife_die_id?: number;
@@ -38,6 +37,8 @@ type FullProduct = Product & {
   corrugated_paper_size_2?: string;
   knife_die_id_2?: number;
   knife_die_2?: string;
+  customer_code?: string;
+  remark?: string;
 };
 
 const fmt = (v: unknown): string => {
@@ -121,7 +122,7 @@ export default function Products() {
     { title: '材质', dataIndex: 'material', key: 'material', width: 100 },
     { title: '盒型', dataIndex: 'box_type', key: 'box_type', width: 80, render: (v: string) => v || '-' },
     { title: '产品类型', dataIndex: 'product_type', key: 'product_type', width: 90, render: (v: string) => v || '-' },
-    { title: '成品规格', dataIndex: 'finished_spec', key: 'finished_spec', width: 100, render: (v: string) => v || '-' },
+    { title: '客户编码', dataIndex: 'customer_code', key: 'customer_code', width: 100, render: (v: string) => v || '-' },
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 70 },
     {
       title: '单价',
@@ -131,24 +132,6 @@ export default function Products() {
       align: 'right' as const,
       render: (v: number) => <span style={{ whiteSpace: 'nowrap' }}>{v ? `¥${Number(v).toFixed(2)}` : '-'}</span>
     },
-    {
-      title: '含税价',
-      dataIndex: 'price_incl_tax',
-      key: 'price_incl_tax',
-      width: 90,
-      align: 'right' as const,
-      render: (v: number) => <span style={{ whiteSpace: 'nowrap' }}>{v ? `¥${Number(v).toFixed(2)}` : '-'}</span>
-    },
-    {
-      title: '不含税价',
-      dataIndex: 'price_excl_tax',
-      key: 'price_excl_tax',
-      width: 90,
-      align: 'right' as const,
-      render: (v: number) => <span style={{ whiteSpace: 'nowrap' }}>{v ? `¥${Number(v).toFixed(2)}` : '-'}</span>
-    },
-    { title: '库存', dataIndex: 'stock_qty', key: 'stock_qty', width: 80 },
-    { title: '安全库存', dataIndex: 'safety_stock', key: 'safety_stock', width: 90 },
     { title: '状态', dataIndex: 'status', key: 'status', width: 90, render: (v: string) => <Tag color={getStatusColor(v)}>{v || '正常生产'}</Tag> },
     {
       title: '操作', key: 'action', width: 150, fixed: 'right' as const,
@@ -202,8 +185,8 @@ export default function Products() {
           <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b', margin: '0 0 16px' }}>基本信息</Divider>
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item name="code" label="产品编号" rules={[{ required: true }]}>
-                <Input placeholder="如 FG-001" />
+              <Form.Item name="code" label="产品编号" tooltip="留空自动生成 PK-001 格式">
+                <Input placeholder="自动生成（如 PK-011）" />
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -221,28 +204,11 @@ export default function Products() {
           {/* 尺寸规格 */}
           <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b', margin: '0 0 16px' }}>尺寸规格</Divider>
           <Row gutter={16}>
-            <Col span={6}>
-              <Form.Item name="length" label="长 (mm)">
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="width" label="宽 (mm)">
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="height" label="高 (mm)">
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
+            <Col span={8}>
               <Form.Item name="material" label="材质">
                 <Input placeholder="如 三层瓦楞" />
               </Form.Item>
             </Col>
-          </Row>
-          <Row gutter={16}>
             <Col span={8}>
               <Form.Item name="unit" label="单位">
                 <Select placeholder="选择单位" options={UNIT_OPTIONS.map((u) => ({ value: u, label: u }))} />
@@ -253,34 +219,78 @@ export default function Products() {
                 <Input placeholder="如 平口箱" />
               </Form.Item>
             </Col>
+          </Row>
+          <Row gutter={16}>
             <Col span={8}>
-              <Form.Item name="finished_spec" label="成品规格">
-                <Input placeholder="成品外观尺寸" />
+              <Form.Item name="product_type" label="产品类型">
+                <Input placeholder="如 纸箱、彩盒" />
               </Form.Item>
             </Col>
           </Row>
 
-          {/* 价格库存 */}
-          <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b', margin: '0 0 16px' }}>价格库存</Divider>
+          {/* 材料明细 */}
+          <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b', margin: '0 0 16px' }}>材料明细</Divider>
           <Row gutter={16}>
-            <Col span={6}>
+            <Col span={8}>
+              <Form.Item name="face_paper" label="面纸材质">
+                <Input placeholder="面纸材质" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="face_paper_size" label="面纸规格">
+                <Input placeholder="面纸规格" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="corrugated_paper" label="坑纸材质">
+                <Input placeholder="坑纸材质" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="corrugated_paper_size" label="坑纸规格">
+                <Input placeholder="坑纸规格" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="board_material" label="纸板材质">
+                <Input placeholder="纸板材质" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="board_spec" label="纸板规格">
+                <Input placeholder="纸板规格" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          {/* 价格 */}
+          <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b', margin: '0 0 16px' }}>价格</Divider>
+          <Row gutter={16}>
+            <Col span={8}>
               <Form.Item name="unit_price" label="单价 (元)">
                 <InputNumber min={0} step={0.01} style={{ width: '100%' }} placeholder="0.00" />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col span={8}>
               <Form.Item name="cost" label="成本 (元)">
                 <InputNumber min={0} step={0.01} style={{ width: '100%' }} placeholder="0.00" />
               </Form.Item>
             </Col>
-            <Col span={6}>
-              <Form.Item name="stock_qty" label="当前库存">
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
+          </Row>
+
+          {/* 客户与备注 */}
+          <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b', margin: '0 0 16px' }}>客户与备注</Divider>
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="customer_code" label="客户编码">
+                <Input placeholder="客户方的产品编号" />
               </Form.Item>
             </Col>
-            <Col span={6}>
-              <Form.Item name="safety_stock" label="安全库存">
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
+            <Col span={16}>
+              <Form.Item name="remark" label="备注">
+                <Input.TextArea rows={2} placeholder="备注信息" />
               </Form.Item>
             </Col>
           </Row>
@@ -336,46 +346,50 @@ export default function Products() {
               <Descriptions.Item label="规格">{fmt(detailRecord.spec)}</Descriptions.Item>
               <Descriptions.Item label="盒型">{fmt(detailRecord.box_type)}</Descriptions.Item>
               <Descriptions.Item label="产品类型">{fmt(detailRecord.product_type)}</Descriptions.Item>
-              <Descriptions.Item label="成品规格">{fmt(detailRecord.finished_spec)}</Descriptions.Item>
+              <Descriptions.Item label="客户编码">{fmt(detailRecord.customer_code)}</Descriptions.Item>
               <Descriptions.Item label="单位">{fmt(detailRecord.unit)}</Descriptions.Item>
               <Descriptions.Item label="状态">
                 <Tag color={getStatusColor(detailRecord.status)}>{detailRecord.status || '正常生产'}</Tag>
               </Descriptions.Item>
+              <Descriptions.Item label="备注" span={2}>{fmt(detailRecord.remark)}</Descriptions.Item>
               <Descriptions.Item label="创建时间" span={2}>{fmt(detailRecord.created_at)}</Descriptions.Item>
             </Descriptions>
 
             {/* 尺寸材质 */}
             <Divider orientation="left" plain style={{ fontSize: 13, color: '#2c5282', margin: '0 0 8px' }}>尺寸材质</Divider>
             <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
-              <Descriptions.Item label="长×宽×高">{`${fmt(detailRecord.length)} × ${fmt(detailRecord.width)} × ${fmt(detailRecord.height)} mm`}</Descriptions.Item>
               <Descriptions.Item label="材质">{fmt(detailRecord.material)}</Descriptions.Item>
               <Descriptions.Item label="盒型形状">{fmt(detailRecord.box_shape)}</Descriptions.Item>
               <Descriptions.Item label="楞型">{fmt(detailRecord.flute_type)}</Descriptions.Item>
-              <Descriptions.Item label="面纸">{fmt(detailRecord.face_paper)}</Descriptions.Item>
-              <Descriptions.Item label="面纸尺寸">{fmt(detailRecord.face_paper_size)}</Descriptions.Item>
-              <Descriptions.Item label="瓦楞纸">{fmt(detailRecord.corrugated_paper)}</Descriptions.Item>
-              <Descriptions.Item label="瓦楞纸尺寸">{fmt(detailRecord.corrugated_paper_size)}</Descriptions.Item>
-              <Descriptions.Item label="纸板规格">{fmt(detailRecord.board_spec)}</Descriptions.Item>
               <Descriptions.Item label="颜色">{fmt(detailRecord.colors)}</Descriptions.Item>
+              <Descriptions.Item label="单位">{fmt(detailRecord.unit)}</Descriptions.Item>
+              <Descriptions.Item label="箱型">{fmt(detailRecord.box_type)}</Descriptions.Item>
+            </Descriptions>
+
+            {/* 材料明细 */}
+            <Divider orientation="left" plain style={{ fontSize: 13, color: '#2c5282', margin: '0 0 8px' }}>材料明细</Divider>
+            <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
+              <Descriptions.Item label="面纸材质">{fmt(detailRecord.face_paper)}</Descriptions.Item>
+              <Descriptions.Item label="面纸规格">{fmt(detailRecord.face_paper_size)}</Descriptions.Item>
+              <Descriptions.Item label="坑纸材质">{fmt(detailRecord.corrugated_paper)}</Descriptions.Item>
+              <Descriptions.Item label="坑纸规格">{fmt(detailRecord.corrugated_paper_size)}</Descriptions.Item>
+              <Descriptions.Item label="纸板材质">{fmt(detailRecord.board_material)}</Descriptions.Item>
+              <Descriptions.Item label="纸板规格">{fmt(detailRecord.board_spec)}</Descriptions.Item>
               {(detailRecord.face_paper_2 || detailRecord.corrugated_paper_2) && (
                 <>
-                  <Descriptions.Item label="面纸2">{fmt(detailRecord.face_paper_2)}</Descriptions.Item>
-                  <Descriptions.Item label="面纸尺寸2">{fmt(detailRecord.face_paper_size_2)}</Descriptions.Item>
-                  <Descriptions.Item label="瓦楞纸2">{fmt(detailRecord.corrugated_paper_2)}</Descriptions.Item>
-                  <Descriptions.Item label="瓦楞纸尺寸2">{fmt(detailRecord.corrugated_paper_size_2)}</Descriptions.Item>
+                  <Descriptions.Item label="面纸2材质">{fmt(detailRecord.face_paper_2)}</Descriptions.Item>
+                  <Descriptions.Item label="面纸2规格">{fmt(detailRecord.face_paper_size_2)}</Descriptions.Item>
+                  <Descriptions.Item label="坑纸2材质">{fmt(detailRecord.corrugated_paper_2)}</Descriptions.Item>
+                  <Descriptions.Item label="坑纸2规格">{fmt(detailRecord.corrugated_paper_size_2)}</Descriptions.Item>
                 </>
               )}
             </Descriptions>
 
-            {/* 价格库存 */}
-            <Divider orientation="left" plain style={{ fontSize: 13, color: '#2c5282', margin: '0 0 8px' }}>价格库存</Divider>
+            {/* 价格 */}
+            <Divider orientation="left" plain style={{ fontSize: 13, color: '#2c5282', margin: '0 0 8px' }}>价格</Divider>
             <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
               <Descriptions.Item label="单价">{fmtPrice(detailRecord.unit_price)}</Descriptions.Item>
-              <Descriptions.Item label="含税价">{fmtPrice(detailRecord.price_incl_tax)}</Descriptions.Item>
-              <Descriptions.Item label="不含税价">{fmtPrice(detailRecord.price_excl_tax)}</Descriptions.Item>
               <Descriptions.Item label="成本">{fmtPrice(detailRecord.cost)}</Descriptions.Item>
-              <Descriptions.Item label="库存">{fmt(detailRecord.stock_qty)}</Descriptions.Item>
-              <Descriptions.Item label="安全库存">{fmt(detailRecord.safety_stock)}</Descriptions.Item>
             </Descriptions>
 
             {/* 印刷加工 */}

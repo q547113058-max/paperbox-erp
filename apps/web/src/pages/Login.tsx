@@ -83,10 +83,10 @@ export default function Login() {
             margin: '16px 0 8px',
             letterSpacing: 1,
           }}>
-            丰晟达 ERP
+            合升纸品 ERP
           </h1>
           <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
-            开平市丰晟达食品 · 纸箱业务管理系统
+            开平市合升纸品 · 纸箱业务管理系统
           </Text>
         </div>
 
@@ -132,7 +132,7 @@ export default function Login() {
           color: 'rgba(255,255,255,0.2)',
           fontSize: 11,
         }}>
-          © 2026 丰晟达食品 · v1.0
+          © 2026 合升纸品 · v1.0
         </div>
       </div>
 

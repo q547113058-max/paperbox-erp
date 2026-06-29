@@ -27,6 +27,7 @@ export interface Product {
   unit: string;
   knife_die: string;
   created_at: string;
+  customer_code: string;
 }
 
 export interface Order {
@@ -241,6 +242,7 @@ export interface OrderItem {
   customer_product_code: string;
   delivery_date: string;
   remark: string;
+  order_date: string;
 }
 
 export interface FinanceRecord {

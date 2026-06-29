@@ -4,11 +4,11 @@ import React from 'react';
 const BRAND = '#2c5282';
 
 /**
- * 丰晟达 ERP 品牌 Logo
+ * 合升纸品 ERP 品牌 Logo
  * - 28×28 圆角方块 + 三道白色横线（纸箱层叠意象）
  * - dark=true 时文字为白色（深色侧边栏用）
  */
-export function BrandLogo({ size = 28, withText = true, dark = false, text = '丰晟达 ERP', sub = null }: {
+export function BrandLogo({ size = 28, withText = true, dark = false, text = '合升纸品', sub = null }: {
   size?: number;
   withText?: boolean;
   dark?: boolean;
@@ -26,7 +26,7 @@ export function BrandLogo({ size = 28, withText = true, dark = false, text = '�
         viewBox="0 0 32 32"
         xmlns="http://www.w3.org/2000/svg"
         style={{ flexShrink: 0 }}
-        aria-label="丰晟达 ERP Logo"
+        aria-label="合升纸品 ERP Logo"
       >
         <defs>
           <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">

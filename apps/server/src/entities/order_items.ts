@@ -32,4 +32,7 @@ export class OrderItem {
   @Column('varchar')
   remark: string;
 
+  @Column('varchar', { default: '' })
+  order_date: string;
+
 }

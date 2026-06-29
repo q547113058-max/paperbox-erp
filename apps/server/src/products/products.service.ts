@@ -41,21 +41,6 @@ export class ProductsService {
       .getMany();
   }
 
-  async updateStock(id: number, data: { delta: number; type: 'in' | 'out' | 'set'; remark?: string }) {
-    const p = await this.repo.findOne({ where: { id } });
-    if (!p) throw new NotFoundException(`Product ${id} not found`);
-    if (data.type === 'set') {
-      p.stock_qty = Number(data.delta || 0);
-    } else if (data.type === 'in') {
-      p.stock_qty = (p.stock_qty || 0) + Number(data.delta || 0);
-    } else {
-      const newQty = (p.stock_qty || 0) - Number(data.delta || 0);
-      if (newQty < 0) throw new BadRequestException(`库存不足，无法出库（当前 ${p.stock_qty}）`);
-      p.stock_qty = newQty;
-    }
-    return this.repo.save(p);
-  }
-
   // ============ 产品图片管理 ============
 
   /**
@@ -173,7 +158,29 @@ export class ProductsService {
 
   // ============ CRUD ============
 
-  create(data: Partial<Product>) {
+  private async generateCode(): Promise<string> {
+    const last = await this.repo
+      .createQueryBuilder('p')
+      .select('p.code')
+      .where('p.code LIKE :prefix', { prefix: 'PK-%' })
+      .orderBy('p.id', 'DESC')
+      .limit(1)
+      .getOne();
+
+    if (last && last.code) {
+      const match = last.code.match(/^PK-(\d+)$/);
+      if (match) {
+        const next = parseInt(match[1], 10) + 1;
+        return `PK-${String(next).padStart(3, '0')}`;
+      }
+    }
+    return 'PK-001';
+  }
+
+  async create(data: Partial<Product>) {
+    if (!data.code || data.code.trim() === '') {
+      data.code = await this.generateCode();
+    }
     const item = this.repo.create(data);
     return this.repo.save(item);
   }

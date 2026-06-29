@@ -41,7 +41,7 @@ const AMBER = '#d97706';
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   admin: [
     '/',
-    '/orders', '/after_sales', '/purchases', '/outsourcing_orders', '/warehouse', '/deliveries',
+    '/orders', '/purchases', '/outsourcing_orders', '/warehouse', '/deliveries',
     '/orders/list', '/purchases/list', '/outsourcing_orders/list', '/warehouse/list', '/deliveries/list',
     '/supplier_reconciliation', '/reconciliation_bills', '/accounts_receivable', '/receivables', '/payables',
     '/products', '/customers', '/suppliers', '/personnel',
@@ -50,7 +50,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   boss: [
     '/',
-    '/orders', '/after_sales', '/purchases', '/outsourcing_orders', '/warehouse', '/deliveries',
+    '/orders', '/purchases', '/outsourcing_orders', '/warehouse', '/deliveries',
     '/orders/list', '/purchases/list', '/outsourcing_orders/list', '/warehouse/list', '/deliveries/list',
     '/supplier_reconciliation', '/reconciliation_bills', '/accounts_receivable', '/receivables', '/payables',
     '/products', '/customers', '/suppliers', '/personnel',
@@ -65,7 +65,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   warehouse: [
     '/',
-    '/orders', '/after_sales', '/purchases', '/outsourcing_orders', '/warehouse', '/deliveries',
+    '/orders', '/purchases', '/outsourcing_orders', '/warehouse', '/deliveries',
     '/orders/list', '/purchases/list', '/outsourcing_orders/list', '/warehouse/list', '/deliveries/list',
     '/products', '/knife_dies', '/color_prints',
   ],
@@ -85,7 +85,6 @@ const allMenuItems = [
     label: '单据生成',
     children: [
       { key: '/orders', icon: <FormOutlined />, label: '销售订单' },
-      { key: '/after_sales', icon: <ToolOutlined />, label: '售后管理' },
       { key: '/purchases', icon: <ShoppingCartOutlined />, label: '采购单' },
       { key: '/outsourcing_orders', icon: <ToolOutlined />, label: '委外单' },
       { key: '/warehouse', icon: <InboxOutlined />, label: '进仓单' },
@@ -155,7 +154,6 @@ const allMenuItems = [
 const PAGE_NAMES: Record<string, string> = {
   '/': '概览',
   '/orders': '销售订单',
-  '/after_sales': '售后管理',
   '/purchases': '采购单',
   '/outsourcing_orders': '委外单',
   '/warehouse': '进仓单',
@@ -294,7 +292,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           lineHeight: 1.5,
         }}
       >
-        <div>开平市丰晟达食品有限公司</div>
+        <div>开平市合升纸品有限公司</div>
         <div style={{ fontSize: 10, opacity: 0.6 }}>v1.0 · 纸箱业务系统</div>
       </div>
     </div>

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Result, Button, Typography } from 'antd';
-import { useNavigate } from 'react-router-dom';
 
 const { Paragraph, Text } = Typography;
 
@@ -59,7 +58,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
 }
 
 function ErrorFallback({ error, onReset, onCopy }: { error: Error | null; onReset: () => void; onCopy: () => void }) {
-  const navigate = useNavigate();
+  const handleHome = () => {
+    onReset();
+    window.location.href = '/';
+  };
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5', padding: 24 }}>
       <Result
@@ -67,7 +69,7 @@ function ErrorFallback({ error, onReset, onCopy }: { error: Error | null; onRese
         title="页面出错了"
         subTitle="抱歉，页面发生了未预期的错误。你可以刷新重试，或返回首页。"
         extra={[
-          <Button type="primary" key="home" onClick={() => { onReset(); navigate('/', { replace: true }); }}>
+          <Button type="primary" key="home" onClick={handleHome}>
             返回首页
           </Button>,
           <Button key="reload" onClick={() => window.location.reload()}>

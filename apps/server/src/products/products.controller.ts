@@ -56,16 +56,6 @@ export class ProductsController {
   }
 
   /**
-   * 仓库入库/出库
-   * POST /api/products/:id/stock
-   */
-  @Post(':id/stock')
-  @Roles('boss', 'warehouse')
-  updateStock(@Param('id', ParseIntPipe) id: number, @Body() body: { delta: number; type: 'in' | 'out' | 'set'; remark?: string }) {
-    return this.service.updateStock(id, body);
-  }
-
-  /**
    * 添加产品图片（一张）
    * POST /api/products/:id/images
    */

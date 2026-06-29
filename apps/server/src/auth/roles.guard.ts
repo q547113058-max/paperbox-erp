@@ -14,6 +14,8 @@ export class RolesGuard implements CanActivate {
     if (!requiredRoles) return true;
     const { user } = context.switchToHttp().getRequest();
     if (!user) throw new ForbiddenException('未认证');
+    // admin role has all permissions
+    if (user.role === 'admin') return true;
     const hasRole = requiredRoles.includes(user.role);
     if (!hasRole) throw new ForbiddenException('无权限');
     return true;

@@ -33,6 +33,11 @@ export class OrdersService {
     // 支持两种格式：{ order: {...}, items: [...] } 或扁平 { order_no: '...', ... }
     const orderData = data.order || data;
     const items = data.items || [];
+    // 自动生成 order_no（如果未提供）
+    if (!orderData.order_no) {
+      const ts = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
+      orderData.order_no = `SO${ts}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+    }
     const entity = this.orderRepo.create(orderData as Order);
     const saved = await this.orderRepo.save(entity);
     const savedItems = await Promise.all(

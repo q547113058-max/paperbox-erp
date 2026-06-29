@@ -50,12 +50,6 @@ export class Product {
   @Column('varchar')
   knife_die: string;
 
-  @Column('float', { default: 0 })
-  price_incl_tax: number;
-
-  @Column('float', { default: 0 })
-  price_excl_tax: number;
-
   @Column('varchar')
   print_plate: string;
 
@@ -88,6 +82,9 @@ export class Product {
 
   @Column('varchar')
   accessories: string;
+
+  @Column('varchar')
+  board_material: string;
 
   @Column('varchar')
   board_spec: string;
@@ -130,5 +127,11 @@ export class Product {
 
   @Column('varchar')
   knife_die_2: string;
+
+  @Column('varchar')
+  customer_code: string;
+
+  @Column('varchar')
+  remark: string;
 
 }

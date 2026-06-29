@@ -9,7 +9,7 @@
 | 服务器 | 42.193.149.154 |
 | 用户 | ubuntu |
 | 项目路径 | /home/ubuntu/data/erp-new/ |
-| 数据库 | /home/ubuntu/data/erp-system/erp.db |
+| 数据库 | /home/ubuntu/data/erp-new/erp.db |
 | 后端端口 | 3005 |
 | 前端入口 | http://42.193.149.154:3005/ |
 
@@ -123,9 +123,9 @@ ps -p $(pgrep -f "ts-node-dev.*erp-new") -o pid,etime,cmd
 ### 数据库 WAL
 
 ```bash
-sqlite3 /home/ubuntu/data/erp-system/erp.db "PRAGMA journal_mode;"
+sqlite3 /home/ubuntu/data/erp-new/erp.db "PRAGMA journal_mode;"
 # 应返回 wal
-sqlite3 /home/ubuntu/data/erp-system/erp.db "PRAGMA wal_checkpoint(TRUNCATE);"
+sqlite3 /home/ubuntu/data/erp-new/erp.db "PRAGMA wal_checkpoint(TRUNCATE);"
 ```
 
 ## 进程管理

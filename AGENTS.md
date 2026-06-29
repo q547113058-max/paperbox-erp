@@ -43,7 +43,7 @@
 
 ## 数据库
 
-- 路径: /home/ubuntu/data/erp-system/erp.db
+- 路径: /home/ubuntu/data/erp-new/erp.db
 - 模式: SQLite WAL (journal_mode=WAL, synchronous=NORMAL, busy_timeout=5000)
 - TypeORM: synchronize: false
 - 账号: boss/demo 和 demo/demo

@@ -22,9 +22,10 @@ interface DashboardData {
   lowStock: number;
 }
 
-function fmtWan(v: number): string {
-  if (v >= 10000) return (v / 10000).toFixed(2) + '万';
-  return v.toLocaleString('zh-CN', { minimumFractionDigits: 2 });
+function fmtWan(v: number | undefined | null): string {
+  const n = v ?? 0;
+  if (n >= 10000) return (n / 10000).toFixed(2) + '万';
+  return n.toLocaleString('zh-CN', { minimumFractionDigits: 2 });
 }
 
 function formatPercent(v: number): { color: string; icon: React.ReactNode; text: string } {
@@ -225,7 +226,7 @@ export default function Dashboard() {
                         { title: '排名', key: 'rank', render: (_: unknown, __: unknown, i: number) => i + 1, width: 50 },
                         { title: '材料名称', dataIndex: 'name', key: 'name' },
                         { title: '采购金额', dataIndex: 'amount', key: 'amount', render: (v: number) => `¥${v.toLocaleString()}` },
-                        { title: '采购面积', dataIndex: 'area', key: 'area', render: (v: number) => `${fmtWan(v)} m²` },
+                        { title: '采购数量', dataIndex: 'qty', key: 'qty', render: (v: number) => v ? `${fmtWan(v)}` : '-' },
                       ]}
                     />
                   ) : <Empty description="暂无采购数据" />}

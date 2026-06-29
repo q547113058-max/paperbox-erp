@@ -1,673 +1,512 @@
-import React, { useEffect, useState } from 'react';
-import { Table, Input, Button, Space, Tag, message, Modal, Form, InputNumber, Select, DatePicker, Row, Col, Divider, Card, Statistic, Tooltip, Dropdown, Radio } from 'antd';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
-  EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined,
-  SearchOutlined, DownloadOutlined, PrinterOutlined, CheckOutlined, StopOutlined,
-  CarOutlined, ToolOutlined, InboxOutlined, ArrowRightOutlined, MoreOutlined,
+  Table, Input, Button, Space, Tag, message, Modal, Form,
+  Select, DatePicker, InputNumber, Popconfirm, Tooltip,
+} from 'antd';
+import {
+  PlusOutlined, EditOutlined, DeleteOutlined,
+  EyeOutlined, CarOutlined,
+  ToolOutlined, SaveOutlined, ExclamationCircleOutlined,
 } from '@ant-design/icons';
-import type { Order, Customer, Product } from '../types/api';
+import type { Order, Product, Customer } from '../types/api';
 import api from '../utils/axios';
 import dayjs from 'dayjs';
-import { TableEmptyCell } from '../components/TableEmptyCell';
 import { getStatusColor } from '../utils/statusColor';
 
 const STATUS_OPTIONS = ['待确认', '已确认', '生产中', '待发货', '已完成', '已取消'];
-const STATUS_COLOR: Record<string, string> = {
-  '待确认': 'default', '已确认': 'blue', '生产中': 'orange',
-  '待发货': 'purple', '已完成': 'green', '已取消': 'red',
-};
 
-/**
- * 订单管理（P0 业务页）
- *
- * 业务闭环：
- *   1. 新建订单（待确认，含产品明细行）
- *   2. 编辑订单（产品明细可增删改）
- *   3. 详情查看（11 字段基本信息 + 38 字段纸箱行业核心数据 + 产品明细表）
- *   4. 状态推进（待确认 → 已确认 → 生产中 → 待发货 → 已完成）
- *   5. 状态切换下拉（行内快速推进）
- *   6. 删除订单（限非已完成）
- *   7. 跳转发货/工单（在详情页内一键跳转）
- *
- * 后端端点（5 个）：
- *   GET    /api/orders                  列表
- *   GET    /api/orders/:id              详情（含 items）
- *   POST   /api/orders                  创建
- *   PUT    /api/orders/:id              更新
- *   PUT    /api/orders/:id/status       状态切换
- *   DELETE /api/orders/:id              删除
- *   PUT    /api/orders/items/:id/manual-close  手动结单
- */
+// ---- 明细条目类型（按用户要求的新列序） ----
+interface OrderItemRow {
+  key: string;
+  product_id: number | null;
+  customer_code: string;
+  material_code: string;
+  material_name: string;
+  material_spec: string;
+  unit: string;
+  quantity: number;
+  unit_price: number;
+  amount: number;
+  order_date: string;
+  delivery_date: string;
+  remark: string;
+}
 
 export default function Orders() {
-  const [data, setData] = useState<Order[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
-  const [keyword, setKeyword] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  const [filterCustomer, setFilterCustomer] = useState<number | null>(null);
-  const [dateRange, setDateRange] = useState<'thisMonth' | 'lastMonth' | 'all' | 'custom'>('all');
-  const [customRange, setCustomRange] = useState<[string, string] | null>(null);
-  const [filterSalesman, setFilterSalesman] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [detail, setDetail] = useState<any>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [editing, setEditing] = useState<Order | null>(null);
-  const [form] = Form.useForm();
+  const [saving, setSaving] = useState(false);
 
+  // ---- 头部表单 ----
+  const [headerForm] = Form.useForm();
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  // ---- 明细状态 ----
+  const [items, setItems] = useState<OrderItemRow[]>([]);
+  const [searchProductId, setSearchProductId] = useState<number | null>(null);
+  const [addQuantity, setAddQuantity] = useState<number>(1);
+  const [addUnitPrice, setAddUnitPrice] = useState<number>(0);
+
+  // ---- 确认弹窗 ----
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // ---- 详情弹窗 ----
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailData, setDetailData] = useState<any>(null);
+  const [detailItems, setDetailItems] = useState<any[]>([]);
+
+  // ====== 数据加载 ======
   const fetchAll = () => {
     setLoading(true);
     Promise.all([
       api.get('/orders'),
-      api.get('/customers').catch(() => ({ data: [] })),
       api.get('/products').catch(() => ({ data: [] })),
-    ])
-      .then(([o, c, p]) => {
-        setData(o.data || []);
-        setCustomers(c.data || []);
-        setProducts(p.data || []);
-      })
-      .catch(() => message.error('加载失败'))
+      api.get('/customers').catch(() => ({ data: [] })),
+    ]).then(([o, p, c]) => {
+      setOrders(o.data || []);
+      setProducts(p.data || []);
+      setCustomers(c.data || []);
+    }).catch(() => message.error('加载数据失败'))
       .finally(() => setLoading(false));
+  };
+
+  const fetchOrders = () => {
+    setListLoading(true);
+    api.get('/orders').then(o => {
+      setOrders(o.data || []);
+    }).catch(() => {}).finally(() => setListLoading(false));
   };
 
   useEffect(() => { fetchAll(); }, []);
 
-  const customerMap = Object.fromEntries(customers.map((c) => [c.id, c.name || c.contact]));
-  const productMap = Object.fromEntries(products.map((p) => [p.id, p]));
+  // ====== 产品搜索选项（增强显示：编码 | 名称 | 规格 | 单位） ======
+  const productOptions = useMemo(() =>
+    products.map(p => ({
+      value: p.id,
+      label: `${p.code || ''} | ${p.name || ''} | ${p.spec || ''} | ${p.unit || ''}`.replace(/^\s*\|\s*/, '').trim(),
+    })), [products]);
 
-  // 业务员下拉选项（从 data 中提取不重复的 salesman）
-  const salesmanOptions = Array.from(new Set(
-    data.map((o: any) => (o.salesman || '').trim()).filter(Boolean)
-  )).map((s) => ({ value: s, label: s }));
+  // ====== 明细操作 ======
+  const handleAddItem = () => {
+    const pid = searchProductId;
+    if (!pid) { message.warning('请搜索选择物料'); return; }
+    const product = products.find(p => p.id === pid);
+    if (!product) { message.warning('物料不存在'); return; }
 
-  // 日期范围计算
-  const today = dayjs();
-  const thisMonthStart = today.startOf('month');
-  const thisMonthEnd = today.endOf('month');
-  const lastMonthStart = today.subtract(1, 'month').startOf('month');
-  const lastMonthEnd = today.subtract(1, 'month').endOf('month');
+    const qty = addQuantity || 1;
+    const up = addUnitPrice || 0;
 
-  const filtered = data.filter((o) => {
-    if (keyword) {
-      const k = keyword.toLowerCase();
-      if (!((o.order_no || '').toLowerCase().includes(k)) &&
-          !((o.customer_order_no || '').toLowerCase().includes(k)) &&
-          !(customerMap[o.customer_id] || '').toLowerCase().includes(k)) return false;
-    }
-    if (filterStatus && o.status !== filterStatus) return false;
-    if (filterCustomer && o.customer_id !== filterCustomer) return false;
-    if (filterSalesman && ((o as any).salesman || '') !== filterSalesman) return false;
-    if (dateRange === 'custom' && customRange) {
-      const [start, end] = customRange;
-      const startD = dayjs(start);
-      const endD = dayjs(end);
-      const dateStr = o.order_date || (typeof o.created_at === 'string' ? o.created_at.slice(0, 10) : null);
-      if (!dateStr) return false;
-      const od = dayjs(dateStr);
-      if (od.isBefore(startD) || od.isAfter(endD)) return false;
-    } else if (dateRange !== 'all') {
-      // 优先用 order_date，没有则用 created_at 兜底
-      const dateStr = o.order_date || (typeof o.created_at === 'string' ? o.created_at.slice(0, 10) : null);
-      if (!dateStr) return false;
-      const od = dayjs(dateStr);
-      if (dateRange === 'thisMonth' && (od.isBefore(thisMonthStart) || od.isAfter(thisMonthEnd))) return false;
-      if (dateRange === 'lastMonth' && (od.isBefore(lastMonthStart) || od.isAfter(lastMonthEnd))) return false;
-    }
-    return true;
-  });
-
-  // KPI 统计
-  const kpi = {
-    total: data.length,
-    pending: data.filter((o) => o.status === '待确认').length,
-    producing: data.filter((o) => o.status === '生产中').length,
-    shipping: data.filter((o) => o.status === '待发货').length,
-    totalAmount: data
-      .filter((o) => o.status !== '已取消')
-      .reduce((s, o) => s + Number(o.total_amount || 0), 0),
+    const newItem: OrderItemRow = {
+      key: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      product_id: product.id,
+      customer_code: (product as any).customer_code || '',
+      material_code: product.code || '',
+      material_name: product.name || '',
+      material_spec: product.spec || '',
+      unit: product.unit || '',
+      quantity: qty,
+      unit_price: up,
+      amount: qty * up,
+      order_date: dayjs().format('YYYY-MM-DD'),
+      delivery_date: '',
+      remark: '',
+    };
+    setItems(prev => [...prev, newItem]);
+    setSearchProductId(null);
+    setAddQuantity(1);
+    setAddUnitPrice(0);
   };
 
-  const handleCreate = () => { setEditing(null); form.resetFields(); form.setFieldsValue({ status: '待确认', items: [{ product_id: undefined, quantity: 1, unit_price: 0 }] }); setModalOpen(true); };
-  const handleEdit = async (o: Order) => {
-    setEditing(o);
-    setModalOpen(true);
+  const handleRemoveItem = (key: string) => {
+    setItems(prev => prev.filter(it => it.key !== key));
+  };
+
+  const totalAmount = useMemo(() =>
+    items.reduce((s, it) => s + (it.amount || it.quantity * (it.unit_price || 0)), 0),
+  [items]);
+
+  // ====== 重置表单 ======
+  const resetForm = () => {
+    setEditingId(null);
+    headerForm.resetFields();
+    headerForm.setFieldsValue({ order_date: dayjs() });
+    setItems([]);
+    setSearchProductId(null);
+    setAddQuantity(1);
+    setAddUnitPrice(0);
+  };
+
+  // ====== 编辑订单（加载到表单） ======
+  const openEdit = async (order: Order) => {
+    setEditingId(order.id);
     try {
-      const res = await api.get(`/orders/${o.id}`);
-      const full = res.data || o;
-      form.setFieldsValue({
-        ...full,
-        delivery_date: full.delivery_date ? dayjs(full.delivery_date) : null,
+      const res = await api.get(`/orders/${order.id}`);
+      const full = res.data;
+      headerForm.setFieldsValue({
+        customer_id: full.customer_id || undefined,
         order_date: full.order_date ? dayjs(full.order_date) : null,
-        items: (full.items && full.items.length > 0) ? full.items : [{ product_id: undefined, quantity: 1, unit_price: 0 }],
+        customer_order_no: full.customer_order_no || '',
+        remark: full.remark || '',
       });
+      const existingItems: OrderItemRow[] = (full.items || []).map((it: any, idx: number) => ({
+        key: `edit_${it.id || idx}`,
+        product_id: it.product_id,
+        customer_code: (products.find(p => p.id === it.product_id) as any)?.customer_code || '',
+        material_code: products.find(p => p.id === it.product_id)?.code || '',
+        material_name: products.find(p => p.id === it.product_id)?.name || '',
+        material_spec: products.find(p => p.id === it.product_id)?.spec || '',
+        unit: products.find(p => p.id === it.product_id)?.unit || '',
+        quantity: it.quantity || 0,
+        unit_price: it.unit_price || 0,
+        amount: it.amount || 0,
+        order_date: it.order_date || full.order_date || '',
+        delivery_date: it.delivery_date || '',
+        remark: it.remark || '',
+      }));
+      setItems(existingItems);
+      // 滚动到表单顶部
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch {
-      form.setFieldsValue({
-        ...o,
-        delivery_date: o.delivery_date ? dayjs(o.delivery_date) : null,
-        order_date: o.order_date ? dayjs(o.order_date) : null,
-        items: [{ product_id: undefined, quantity: 1, unit_price: 0 }],
-      });
+      message.error('加载订单详情失败');
+    }
+  };
+
+  // ====== 确认保存弹窗 ======
+  const handleOpenConfirm = async () => {
+    try {
+      await headerForm.validateFields();
+      if (items.length === 0) {
+        message.warning('请至少添加一条物料明细');
+        return;
+      }
+      setConfirmOpen(true);
+    } catch {
+      // 表单验证失败
     }
   };
 
   const handleSave = async () => {
+    setConfirmOpen(false);
+    setSaving(true);
     try {
-      const values = await form.validateFields();
-      // 计算总金额 = 各项 amount 之和
-      const items = (values.items || []).map((it: any) => ({
-        ...it,
-        amount: Number(it.quantity || 0) * Number(it.unit_price || 0),
-      }));
-      const total = items.reduce((s: number, it: any) => s + Number(it.amount || 0), 0);
+      const values = headerForm.getFieldsValue();
       const payload = {
-        ...values,
         order: {
-          ...values,
-          total_amount: total,
-          delivery_date: values.delivery_date?.format('YYYY-MM-DD'),
-          order_date: values.order_date?.format('YYYY-MM-DD'),
+          customer_id: values.customer_id,
+          order_date: values.order_date?.format?.('YYYY-MM-DD') || values.order_date,
+          customer_order_no: values.customer_order_no || '',
+          remark: values.remark || '',
+          status: '待确认',
+          total_amount: totalAmount,
+          total_cost: 0,
+          profit: 0,
         },
-        items,
-        total_amount: total,
-        delivery_date: values.delivery_date?.format('YYYY-MM-DD'),
-        order_date: values.order_date?.format('YYYY-MM-DD'),
+        items: items.map(it => ({
+          product_id: it.product_id,
+          quantity: it.quantity,
+          unit_price: it.unit_price,
+          amount: it.amount || it.quantity * it.unit_price,
+          order_date: it.order_date || '',
+          delivery_date: it.delivery_date || '',
+          customer_product_code: it.customer_code || '',
+          remark: it.remark || '',
+        })),
       };
-      if (editing) { await api.put(`/orders/${editing.id}`, payload); message.success('更新成功'); }
-      else { await api.post('/orders', payload); message.success('创建成功'); }
-      setModalOpen(false);
-      fetchAll();
-    } catch (e: any) { if (!e.errorFields) message.error(e?.response?.data?.message || '保存失败'); }
-  };
 
-  const handleDelete = async (id: number) => {
-    try { await api.delete(`/orders/${id}`); message.success('已删除'); fetchAll(); } catch (e: any) { message.error(e?.response?.data?.message || '删除失败'); }
-  };
-
-  const handleViewDetail = async (o: Order) => {
-    setDetail(null);
-    setDetailOpen(true);
-    setDetailLoading(true);
-    try {
-      const res = await api.get(`/orders/${o.id}`);
-      setDetail(res.data);
-    } catch (e: any) {
-      message.error('加载详情失败');
-    } finally {
-      setDetailLoading(false);
-    }
-  };
-
-  const handleStatusChange = async (o: Order, status: string) => {
-    try {
-      await api.put(`/orders/${o.id}/status`, { status });
-      message.success(`状态已更新为：${status}`);
-      fetchAll();
-    } catch (e: any) {
-      message.error(e?.response?.data?.message || '状态更新失败');
-    }
-  };
-
-  const handleExport = () => {
-    if (filtered.length === 0) { message.warning('当前筛选无数据'); return; }
-    const headers = ['订单号', '客户', '客户单号', '总金额', '成本', '利润', '状态', '交货日期', '业务员', '下单日期'];
-    const rows = filtered.map((o) => [
-      o.order_no || `TMP-${o.id}`,
-      customerMap[o.customer_id] || `ID:${o.customer_id}`,
-      o.customer_order_no || '',
-      Number(o.total_amount || 0).toFixed(2),
-      Number(o.total_cost || 0).toFixed(2),
-      Number(o.profit || 0).toFixed(2),
-      o.status,
-      o.delivery_date || '',
-      o.salesman_id || '',
-      o.order_date || '',
-    ]);
-    const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `订单-${dayjs().format('YYYYMMDD-HHmm')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    message.success(`已导出 ${filtered.length} 条`);
-  };
-
-  const handleGenerateWorkOrder = async (o: Order) => {
-    try {
-      const res = await api.post('/work_orders/from-order', { order_id: o.id });
-      message.success(`工单已生成：${res.data?.work_order_no || `#${res.data?.id}`}`);
-      fetchAll();
-    } catch (e: any) {
-      message.error(e?.response?.data?.message || '生成工单失败');
-    }
-  };
-
-  const handleGenerateDelivery = async (o: Order) => {
-    try {
-      const full = await api.get(`/orders/${o.id}`);
-      const orderItems = full.data?.items || [];
-      if (orderItems.length === 0) {
-        message.warning('该订单没有产品明细，无法生成发货单');
-        return;
+      if (editingId) {
+        await api.put(`/orders/${editingId}`, payload);
+        message.success('订单已更新');
+      } else {
+        await api.post('/orders', payload);
+        message.success('订单已创建');
       }
-      const res = await api.post('/deliveries/from-order', {
-        order_id: o.id,
+      resetForm();
+      fetchOrders();
+    } catch (e: any) {
+      if (!e.errorFields) message.error(e?.response?.data?.message || '保存失败');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ====== 查看详情 ======
+  const openDetail = async (order: Order) => {
+    try {
+      const res = await api.get(`/orders/${order.id}`);
+      setDetailData(res.data);
+      setDetailItems(res.data.items || []);
+      setDetailOpen(true);
+    } catch {
+      message.error('加载详情失败');
+    }
+  };
+
+  // ====== 删除 ======
+  const handleDelete = async (id: number) => {
+    try { await api.delete(`/orders/${id}`); message.success('已删除'); fetchOrders(); }
+    catch (e: any) { message.error(e?.response?.data?.message || '删除失败'); }
+  };
+
+  // ====== 状态推进 ======
+  const handleStatusChange = async (order: Order, status: string) => {
+    try { await api.put(`/orders/${order.id}/status`, { status }); message.success('状态已更新'); fetchOrders(); }
+    catch (e: any) { message.error(e?.response?.data?.message || '更新失败'); }
+  };
+
+  // ====== 生成工单/发货单 ======
+  const handleGenerateWorkOrder = async (order: Order) => {
+    try {
+      await api.post('/work_orders/from-order', { order_id: order.id });
+      message.success('工单已生成'); fetchOrders();
+    } catch (e: any) { message.error(e?.response?.data?.message || '生成失败'); }
+  };
+
+  const handleGenerateDelivery = async (order: Order) => {
+    try {
+      const full = await api.get(`/orders/${order.id}`);
+      const orderItems = full.data?.items || [];
+      if (!orderItems.length) { message.warning('该订单无产品明细'); return; }
+      await api.post('/deliveries/from-order', {
+        order_id: order.id,
         items: orderItems.map((it: any) => ({ product_id: it.product_id, quantity: it.quantity })),
       });
-      message.success(`发货单已生成：${res.data?.delivery_no}`);
-      fetchAll();
-    } catch (e: any) {
-      message.error(e?.response?.data?.message || '生成发货单失败');
-    }
+      message.success('发货单已生成'); fetchOrders();
+    } catch (e: any) { message.error(e?.response?.data?.message || '生成失败'); }
   };
 
-  const columns = [
-    { title: '订单号', dataIndex: 'order_no', key: 'order_no', width: 145, fixed: 'left' as const, render: (v: string | null, r: Order) => v ? <Tooltip title={v}><span style={{ whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{v}</span></Tooltip> : <Tag color="orange">TMP-{r.id}</Tag> },
-    { title: '客户', dataIndex: 'customer_id', key: 'customer', width: 120, render: (id: number) => customerMap[id] || '未关联' },
-    { title: '业务员', dataIndex: 'salesman_id', key: 'salesman', width: 80, render: (v: number) => v ? `ID:${v}` : '-' },
-    { title: '状态', dataIndex: 'status', key: 'status', width: 110, render: (s: string, r: Order) => (
-        <Select
-          size="small"
-          value={s}
-          style={{ width: 100 }}
-          options={STATUS_OPTIONS.map((x) => ({ value: x, label: <Tag color={getStatusColor(x)} style={{ margin: 0 }}>{x}</Tag> }))}
-          onChange={(v) => handleStatusChange(r, v)}
-        />
+  // ====== 明细表列（按用户要求的新列序） ======
+  const itemColumns = [
+    { title: '序号', width: 50, render: (_: any, __: any, idx: number) => idx + 1 },
+    {
+      title: '客户编码', dataIndex: 'customer_code', width: 100,
+      render: (v: string, r: OrderItemRow) => (
+        <Input size="small" value={v} style={{ width: 95 }}
+          onChange={e => setItems(prev => prev.map(it => it.key === r.key ? { ...it, customer_code: e.target.value } : it))} />
       ),
     },
-    { title: '总金额', dataIndex: 'total_amount', key: 'total_amount', width: 120, align: 'right' as const, render: (v: number) => <span style={{ fontWeight: 600, color: Number(v) > 0 ? '#cf1322' : undefined, whiteSpace: 'nowrap' }}>¥{Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span> },
-    { title: '成本', dataIndex: 'total_cost', key: 'total_cost', width: 110, align: 'right' as const, render: (v: number) => <span style={{ whiteSpace: 'nowrap' }}>¥{Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span> },
-    { title: '利润', dataIndex: 'profit', key: 'profit', width: 110, align: 'right' as const, render: (v: number) => <span style={{ color: Number(v) >= 0 ? '#52c41a' : '#cf1322', whiteSpace: 'nowrap' }}>¥{Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span> },
-    { title: '客户单号', dataIndex: 'customer_order_no', key: 'customer_order_no', width: 110, render: (v: string) => v || '-' },
-    { title: '交货日期', dataIndex: 'delivery_date', key: 'delivery_date', width: 110, render: (v: string) => v || '-' },
-    { title: '订单日期', dataIndex: 'order_date', key: 'order_date', width: 110, render: (v: string) => v || '-' },
-    { title: '创建日期', dataIndex: 'created_at', key: 'created_at', width: 110, render: (v: string) => v?.split('T')[0] || v },
     {
-      title: '操作', key: 'action', width: 230, fixed: 'right' as const,
-      render: (_: any, r: Order) => {
-        const moreItems = [
-          ...(r.status !== '已完成' && r.status !== '已取消' ? [{ key: 'print', label: '打印', icon: <PrinterOutlined /> }] : []),
-          { key: 'delete', label: '删除', icon: <DeleteOutlined />, danger: true },
-        ];
-        return (
-          <Space size={4}>
-            <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => handleViewDetail(r)}>详情</Button>
-            <Button size="small" type="link" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
-            {r.status === '已确认' && (
-              <Button size="small" type="link" icon={<ToolOutlined />} onClick={() => Modal.confirm({ title: '确认生成工单？', content: `将为订单 ${r.order_no || `#${r.id}`} 生成生产工单`, okText: '生成', cancelText: '取消', onOk: () => handleGenerateWorkOrder(r) })}>工单</Button>
-            )}
-            {r.status !== '已完成' && r.status !== '已取消' && (
-              <Button size="small" type="link" icon={<CarOutlined />} onClick={() => Modal.confirm({ title: '确认生成发货单？', content: `将为订单 ${r.order_no || `#${r.id}`} 生成发货单`, okText: '生成', cancelText: '取消', onOk: () => handleGenerateDelivery(r) })}>发货</Button>
-            )}
-            <Dropdown
-              trigger={['click']}
-              menu={{
-                items: moreItems,
-                onClick: ({ key }) => {
-                  if (key === 'print') message.info('打印功能：打开 /api/print/order/' + r.id);
-                  if (key === 'delete') {
-                    Modal.confirm({ title: '确认删除？', okText: '删除', cancelText: '取消', okButtonProps: { danger: true }, onOk: () => handleDelete(r.id) });
-                  }
-                },
-              }}
-            >
-              <Button size="small" type="link" icon={<MoreOutlined />}>更多</Button>
-            </Dropdown>
-          </Space>
-        );
+      title: '物料编码', dataIndex: 'material_code', width: 100,
+      render: (v: string) => <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{v || '-'}</span>,
+    },
+    { title: '物料名称', dataIndex: 'material_name', width: 120 },
+    { title: '物料规格', dataIndex: 'material_spec', width: 100 },
+    { title: '单位', dataIndex: 'unit', width: 60 },
+    {
+      title: '数量', dataIndex: 'quantity', width: 80, align: 'right' as const,
+      render: (v: number, r: OrderItemRow) => (
+        <InputNumber size="small" min={0} value={v} style={{ width: 70 }}
+          onChange={val => {
+            const q = val || 0;
+            setItems(prev => prev.map(it => it.key === r.key ? { ...it, quantity: q, amount: q * (it.unit_price || 0) } : it));
+          }} />
+      ),
+    },
+    {
+      title: '单价', dataIndex: 'unit_price', width: 90, align: 'right' as const,
+      render: (v: number, r: OrderItemRow) => (
+        <InputNumber size="small" min={0} step={0.01} value={v} style={{ width: 85 }}
+          onChange={val => {
+            const up = val || 0;
+            setItems(prev => prev.map(it => it.key === r.key ? { ...it, unit_price: up, amount: it.quantity * up } : it));
+          }} />
+      ),
+    },
+    {
+      title: '总价', dataIndex: 'amount', width: 100, align: 'right' as const,
+      render: (_: number, r: OrderItemRow) => {
+        const amt = r.amount || r.quantity * (r.unit_price || 0);
+        return <span style={{ fontWeight: 600, color: '#dc2626' }}>¥{amt.toFixed(2)}</span>;
       },
+    },
+    {
+      title: '下单日期', dataIndex: 'order_date', width: 115,
+      render: (v: string, r: OrderItemRow) => (
+        <DatePicker size="small" value={v ? dayjs(v) : null} style={{ width: 108 }}
+          onChange={d => setItems(prev => prev.map(it => it.key === r.key ? { ...it, order_date: d?.format('YYYY-MM-DD') || '' } : it))} />
+      ),
+    },
+    {
+      title: '交期', dataIndex: 'delivery_date', width: 115,
+      render: (v: string, r: OrderItemRow) => (
+        <DatePicker size="small" value={v ? dayjs(v) : null} style={{ width: 108 }}
+          onChange={d => setItems(prev => prev.map(it => it.key === r.key ? { ...it, delivery_date: d?.format('YYYY-MM-DD') || '' } : it))} />
+      ),
+    },
+    {
+      title: '备注', dataIndex: 'remark', width: 130,
+      render: (v: string, r: OrderItemRow) => (
+        <Input size="small" value={v} style={{ width: 120 }}
+          onChange={e => setItems(prev => prev.map(it => it.key === r.key ? { ...it, remark: e.target.value } : it))} />
+      ),
+    },
+    {
+      title: '操作', width: 60, fixed: 'right' as const,
+      render: (_: any, r: OrderItemRow) => (
+        <Button size="small" type="link" danger onClick={() => handleRemoveItem(r.key)}>删除</Button>
+      ),
     },
   ];
 
   return (
-    <div>
+    <div style={{ maxWidth: '100%' }}>
+      {/* ====== 页面标题 ====== */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ margin: 0 }}>订单管理</h2>
-        <Space>
-          <Input placeholder="搜索订单号/客户/客户单号" value={keyword} onChange={(e) => setKeyword(e.target.value)} style={{ width: 240 }} allowClear prefix={<SearchOutlined />} />
-          <Button icon={<ReloadOutlined />} onClick={fetchAll}>刷新</Button>
-          <Button icon={<DownloadOutlined />} onClick={handleExport}>导出 ({filtered.length})</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>新建订单</Button>
-        </Space>
+        <h2 style={{ margin: 0, fontSize: 20, color: '#1e40af' }}>
+          {editingId ? `编辑销售订单 #${editingId}` : '新增销售订单'}
+        </h2>
+        {editingId && (
+          <Button onClick={resetForm} icon={<PlusOutlined />}>新建订单</Button>
+        )}
       </div>
 
-      {/* KPI 卡片 */}
-      <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={5}>
-          <Card size="small" style={{ borderTop: '3px solid #2c5282' }}>
-            <Statistic title="总订单" value={kpi.total} valueStyle={{ color: '#2c5282' }} />
-          </Card>
-        </Col>
-        <Col span={5}>
-          <Card size="small" style={{ borderTop: '3px solid #faad14' }}>
-            <Statistic title="待确认" value={kpi.pending} valueStyle={{ color: '#faad14' }} />
-          </Card>
-        </Col>
-        <Col span={5}>
-          <Card size="small" style={{ borderTop: '3px solid #fa8c16' }}>
-            <Statistic title="生产中" value={kpi.producing} valueStyle={{ color: '#fa8c16' }} />
-          </Card>
-        </Col>
-        <Col span={5}>
-          <Card size="small" style={{ borderTop: '3px solid #722ed1' }}>
-            <Statistic title="待发货" value={kpi.shipping} valueStyle={{ color: '#722ed1' }} />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card size="small" style={{ borderTop: '3px solid #cf1322' }}>
-            <Statistic title="总金额" value={kpi.totalAmount} precision={2} prefix="¥" valueStyle={{ color: '#cf1322', fontSize: 18 }} />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* 筛选条 */}
-      <div style={{ marginBottom: 12, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Radio.Group
-          value={dateRange}
-          onChange={(e) => { setDateRange(e.target.value); if (e.target.value !== 'custom') setCustomRange(null); }}
-          optionType="button"
-          buttonStyle="solid"
-          size="small"
-        >
-          <Radio.Button value="thisMonth">本月</Radio.Button>
-          <Radio.Button value="lastMonth">上月</Radio.Button>
-          <Radio.Button value="all">全部</Radio.Button>
-        </Radio.Group>
-        <DatePicker.RangePicker
-          value={customRange ? [dayjs(customRange[0]), dayjs(customRange[1])] : null}
-          onChange={(dates) => {
-            if (dates && dates[0] && dates[1]) {
-              setCustomRange([dates[0].format('YYYY-MM-DD'), dates[1].format('YYYY-MM-DD')]);
-              setDateRange('custom');
-            } else {
-              setCustomRange(null);
-              setDateRange('all');
-            }
-          }}
-          placeholder={['开始日期', '结束日期']}
-          size="small"
-          style={{ width: 240 }}
-        />
-        <span>状态：</span>
-        <Select allowClear placeholder="全部状态" value={filterStatus} onChange={setFilterStatus} style={{ width: 140 }} options={STATUS_OPTIONS.map((s) => ({ value: s, label: s }))} />
-        <span>客户：</span>
-        <Select
-          allowClear showSearch placeholder="全部客户" value={filterCustomer} onChange={setFilterCustomer}
-          style={{ width: 180 }} optionFilterProp="label"
-          options={customers.map((c) => ({ value: c.id, label: c.name || c.contact || `ID:${c.id}` }))}
-        />
-        <span>业务员：</span>
-        <Select
-          allowClear showSearch placeholder="全部业务员" value={filterSalesman} onChange={setFilterSalesman}
-          style={{ width: 140 }} optionFilterProp="label"
-          options={salesmanOptions}
-        />
-        <Button size="small" onClick={() => { setKeyword(''); setFilterStatus(null); setFilterCustomer(null); setFilterSalesman(null); setDateRange('all'); setCustomRange(null); }}>清除筛选</Button>
-      </div>
-
-      <Table
-        rowKey="id"
-        size="small"
-        loading={loading}
-        columns={columns}
-        dataSource={filtered}
-        pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
-        scroll={{ x: 1600 }}
-        locale={{
-          emptyText: (
-            <TableEmptyCell
-              resource="订单"
-              actionText="新建订单"
-              onAction={handleCreate}
-              keyword={keyword}
-              isDataEmpty={data.length === 0}
+      {/* ====== 单据头表单 ====== */}
+      <div style={{ background: '#f0f5ff', padding: '12px 16px', borderRadius: 8, marginBottom: 16, border: '1px solid #dbeafe' }}>
+        <Form form={headerForm} layout="inline" style={{ flexWrap: 'wrap', gap: 10 }}>
+          <Form.Item name="customer_id" label="客户名称" rules={[{ required: true, message: '请选择客户' }]}>
+            <Select
+              showSearch
+              placeholder="搜索选择客户"
+              style={{ width: 180 }}
+              optionFilterProp="label"
+              options={customers.map(c => ({ value: c.id, label: c.name || c.contact || `ID:${c.id}` }))}
+              allowClear
             />
-          ),
-        }}
-      />
-
-      <Modal title={editing ? '编辑订单' : '新建订单'} open={modalOpen} onOk={handleSave} onCancel={() => setModalOpen(false)} width={960} okText="保存" cancelText="取消" destroyOnClose styles={{ body: { maxHeight: '70vh', overflowY: 'auto' } }}>
-        <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
-          <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b', margin: '0 0 16px' }}>基本信息</Divider>
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item name="order_no" label="订单号"><Input placeholder="自动生成" /></Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="customer_id" label="客户" rules={[{ required: true, message: '请选择客户' }]}>
-                <Select
-                  showSearch
-                  placeholder="选择客户"
-                  optionFilterProp="label"
-                  options={customers.map((c) => ({ value: c.id, label: c.name || c.contact || `ID:${c.id}` }))}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="status" label="状态" initialValue="待确认">
-                <Select options={STATUS_OPTIONS.map((s) => ({ value: s, label: s }))} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b', margin: '0 0 16px' }}>日期与单号</Divider>
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item name="order_date" label="订单日期"><DatePicker style={{ width: '100%' }} /></Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="delivery_date" label="交货日期"><DatePicker style={{ width: '100%' }} /></Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="customer_order_no" label="客户单号"><Input placeholder="客户单号" /></Form.Item>
-            </Col>
-          </Row>
-
-          <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b', margin: '0 0 16px' }}>金额</Divider>
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item name="total_amount" label="总金额 (元)"><InputNumber min={0} step={0.01} style={{ width: '100%' }} placeholder="0.00" /></Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="total_cost" label="总成本 (元)"><InputNumber min={0} step={0.01} style={{ width: '100%' }} placeholder="0.00" /></Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="profit" label="利润 (元)"><InputNumber step={0.01} style={{ width: '100%' }} placeholder="0.00" /></Form.Item>
-            </Col>
-          </Row>
-
-          <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b', margin: '0 0 16px' }}>产品明细</Divider>
-          <Form.List name="items">
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map(({ key, name, ...restField }) => (
-                  <Row key={key} gutter={8} align="middle" style={{ marginBottom: 8 }}>
-                    <Col span={7}>
-                      <Form.Item {...restField} name={[name, 'product_id']} rules={[{ required: true, message: '请选择产品' }]} style={{ marginBottom: 0 }}>
-                        <Select
-                          showSearch
-                          placeholder="产品"
-                          optionFilterProp="label"
-                          options={products.map((p) => ({
-                            value: p.id,
-                            label: `${p.code || ''} ${p.name || ''} ${p.spec || ''}`,
-                          }))}
-                          onChange={(productId) => {
-                            const p = productMap[productId];
-                            const items = form.getFieldValue('items') || [];
-                            items[name] = {
-                              ...items[name],
-                              product_id: productId,
-                              unit_price: items[name]?.unit_price ?? Number(p?.unit_price || 0),
-                              customer_product_code: items[name]?.customer_product_code || p?.code || '',
-                            };
-                            form.setFieldsValue({ items });
-                          }}
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col span={3}>
-                      <Form.Item {...restField} name={[name, 'quantity']} rules={[{ required: true, message: '数量' }]} style={{ marginBottom: 0 }}>
-                        <InputNumber min={1} style={{ width: '100%' }} placeholder="数量" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={3}>
-                      <Form.Item {...restField} name={[name, 'unit_price']} style={{ marginBottom: 0 }}>
-                        <InputNumber min={0} step={0.01} style={{ width: '100%' }} placeholder="单价" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={4}>
-                      <Form.Item {...restField} name={[name, 'customer_product_code']} style={{ marginBottom: 0 }}>
-                        <Input placeholder="客户产品编号" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={4}>
-                      <Form.Item {...restField} name={[name, 'delivery_date']} style={{ marginBottom: 0 }}>
-                        <Input placeholder="交期 YYYY-MM-DD" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={2}>
-                      <Form.Item {...restField} name={[name, 'remark']} style={{ marginBottom: 0 }}>
-                        <Input placeholder="备注" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={1}>
-                      <Button size="small" danger type="link" icon={<DeleteOutlined />} onClick={() => remove(name)} />
-                    </Col>
-                  </Row>
-                ))}
-                <Button type="dashed" icon={<PlusOutlined />} onClick={() => add({ quantity: 1, unit_price: 0 })} block>
-                  添加产品明细
-                </Button>
-              </>
-            )}
-          </Form.List>
-
-          <Form.Item name="remark" label="备注" style={{ marginTop: 16 }}><Input.TextArea rows={2} placeholder="备注信息" /></Form.Item>
+          </Form.Item>
+          <Form.Item name="customer_order_no" label="客户单号">
+            <Input style={{ width: 150 }} placeholder="客户订单号" />
+          </Form.Item>
+          <Form.Item name="order_date" label="下单日期" initialValue={dayjs()}>
+            <DatePicker style={{ width: 130 }} />
+          </Form.Item>
+          <Form.Item name="remark" label="备注">
+            <Input style={{ width: 220 }} placeholder="备注" />
+          </Form.Item>
+          <Form.Item>
+            <Button onClick={resetForm} size="small">清空</Button>
+          </Form.Item>
         </Form>
+      </div>
+
+      {/* ====== 添加物料工具栏 ====== */}
+      <div style={{ background: '#e6f7ff', border: '1px solid #91d5ff', borderRadius: 6, padding: '8px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#0050b3', whiteSpace: 'nowrap' }}>添加物料明细</span>
+        <Select
+          showSearch
+          value={searchProductId}
+          onChange={setSearchProductId}
+          placeholder="搜索物料编码/名称/规格（自动弹出可选物料）"
+          style={{ minWidth: 320, flex: 1 }}
+          optionFilterProp="label"
+          options={productOptions}
+          allowClear
+          notFoundContent="未找到匹配物料"
+        />
+        <span style={{ fontSize: 13, color: '#595959' }}>数量</span>
+        <InputNumber min={1} value={addQuantity} onChange={v => setAddQuantity(v || 1)} style={{ width: 80 }} />
+        <span style={{ fontSize: 13, color: '#595959' }}>单价</span>
+        <InputNumber min={0} step={0.01} value={addUnitPrice} onChange={v => setAddUnitPrice(v || 0)} style={{ width: 100 }} />
+        <Button type="primary" onClick={handleAddItem} icon={<PlusOutlined />}>添加</Button>
+      </div>
+
+      {/* ====== 明细表格 ====== */}
+      <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <Table
+          rowKey="key"
+          size="small"
+          columns={itemColumns}
+          dataSource={items}
+          pagination={false}
+          scroll={{ x: 1400, y: 400 }}
+          locale={{ emptyText: '暂无明细。请在上方搜索物料后添加（输入物料编码/名称可自动弹出已录入物料供选择）' }}
+          summary={() => items.length > 0 ? (
+            <Table.Summary.Row>
+              <Table.Summary.Cell index={0} colSpan={6}>
+                <b style={{ fontSize: 14 }}>合计</b>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={6} align="right">
+                <b>{items.reduce((s, it) => s + it.quantity, 0)}</b>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={7} colSpan={2}>
+                <b style={{ fontSize: 15, color: '#dc2626' }}>
+                  ¥{totalAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                </b>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={9} colSpan={4} />
+            </Table.Summary.Row>
+          ) : undefined}
+        />
+      </div>
+
+      {/* ====== 底部操作按钮 ====== */}
+      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+        <Button onClick={resetForm}>清空表单</Button>
+        <Button
+          type="primary"
+          size="large"
+          icon={<SaveOutlined />}
+          onClick={handleOpenConfirm}
+          loading={saving}
+          disabled={items.length === 0}
+        >
+          {editingId ? '更新订单' : '保存订单'}
+        </Button>
+      </div>
+
+      {/* ====== 确认保存弹窗 ====== */}
+      <Modal
+        title={<span><ExclamationCircleOutlined style={{ color: '#faad14', marginRight: 8 }} />确认保存</span>}
+        open={confirmOpen}
+        onOk={handleSave}
+        onCancel={() => setConfirmOpen(false)}
+        okText="确认保存"
+        cancelText="取消"
+        width={450}
+      >
+        <div style={{ fontSize: 14, lineHeight: 2 }}>
+          <p><b>客户：</b>{customers.find(c => c.id === headerForm.getFieldValue('customer_id'))?.name || '-'}</p>
+          <p><b>客户单号：</b>{headerForm.getFieldValue('customer_order_no') || '-'}</p>
+          <p><b>明细行数：</b>{items.length} 行</p>
+          <p><b>总数量：</b>{items.reduce((s, it) => s + it.quantity, 0)}</p>
+          <p><b>总金额：</b><span style={{ color: '#dc2626', fontWeight: 600, fontSize: 16 }}>¥{totalAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span></p>
+          <p style={{ color: '#8c8c8c', fontSize: 12 }}>订单号将在保存后自动生成</p>
+        </div>
       </Modal>
 
-      {/* 详情弹窗 */}
+      {/* ====== 详情弹窗 ====== */}
       <Modal
-        title={`订单详情 - ${detail?.order_no || `TMP-${detail?.id}`}`}
+        title={detailData ? `订单详情 - ${detailData.order_no || `#${detailData.id}`}` : '订单详情'}
         open={detailOpen}
         onCancel={() => setDetailOpen(false)}
-        width={960}
-        styles={{ body: { maxHeight: '70vh', overflowY: 'auto' } }}
-        footer={[
-          <Button key="close" onClick={() => setDetailOpen(false)}>关闭</Button>,
-        ]}
+        width={1000}
+        footer={null}
       >
-        {detail && (
-          <>
-            <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b' }}>基本信息</Divider>
-            <Row gutter={[16, 8]}>
-              <Col span={6}><b>订单号：</b>{detail.order_no || `TMP-${detail.id}`}</Col>
-              <Col span={6}><b>客户：</b>{customerMap[detail.customer_id] || `ID:${detail.customer_id}`}</Col>
-              <Col span={6}><b>业务员：</b>{detail.salesman_id || '-'}</Col>
-              <Col span={6}><b>状态：</b><Tag color={getStatusColor(detail.status)}>{detail.status}</Tag></Col>
-              <Col span={6}><b>客户单号：</b>{detail.customer_order_no || '-'}</Col>
-              <Col span={6}><b>下单日期：</b>{detail.order_date || '-'}</Col>
-              <Col span={6}><b>交货日期：</b>{detail.delivery_date || '-'}</Col>
-              <Col span={6}><b>创建日期：</b>{(detail.created_at || '').split('T')[0]}</Col>
-              <Col span={6}><b>印刷名：</b>{detail.print_name || '-'}</Col>
-              <Col span={6}><b>客户尺寸：</b>{detail.customer_size || '-'}</Col>
-              <Col span={6}><b>刀模尺寸：</b>{detail.die_size || '-'}</Col>
-              <Col span={6}><b>数量(总)：</b>{detail.quantity || '-'}</Col>
-            </Row>
-
-            <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b' }}>面纸（中纸/里纸）</Divider>
-            <Row gutter={[16, 8]}>
-              <Col span={12}>
-                <b>面纸：</b>
-                {detail.face_supplier || '-'} / {detail.face_material || '-'} / {detail.face_size || '-'} / {detail.face_qty || '-'} 张
-                <br />
-                单价 ¥{detail.face_price || 0} / 加价 ¥{detail.face_fee || 0}
-              </Col>
-              <Col span={12}>
-                <b>中纸：</b>
-                {detail.medium_supplier || '-'} / {detail.medium_material || '-'} / {detail.medium_weight || '-'}g / {detail.medium_size || '-'} / {detail.medium_qty || '-'} 张
-                <br />
-                单价 ¥{detail.medium_price || 0}
-              </Col>
-            </Row>
-
-            <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b' }}>印刷/表面处理/刀模</Divider>
-            <Row gutter={[16, 8]}>
-              <Col span={6}><b>印刷色数：</b>{detail.print_color || '-'} 色</Col>
-              <Col span={6}><b>印刷单价：</b>¥{detail.print_price || 0}</Col>
-              <Col span={6}><b>表面处理：</b>{detail.surface_process || '-'}</Col>
-              <Col span={6}><b>表面单价：</b>¥{detail.surface_price || 0}</Col>
-              <Col span={6}><b>刀模单价：</b>¥{detail.die_price || 0}</Col>
-              <Col span={6}><b>委外费：</b>¥{detail.outsource_fee || 0}</Col>
-              <Col span={12}><b>参考信息：</b>{detail.reference_info || '-'}</Col>
-              <Col span={24}><b>客户反馈：</b>{detail.customer_feedback || '-'}</Col>
-            </Row>
-
-            <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b' }}>金额</Divider>
-            <Row gutter={[16, 8]}>
-              <Col span={6}><b>含税成本：</b>¥{detail.cost_tax || 0}</Col>
-              <Col span={6}><b>不含税成本：</b>¥{detail.cost_no_tax || 0}</Col>
-              <Col span={6}><b>含税单价：</b>¥{detail.price_tax || 0}</Col>
-              <Col span={6}><b>不含税单价：</b>¥{detail.price_no_tax || 0}</Col>
-              <Col span={6}><b>总金额（含税）：</b>¥{detail.total_tax || 0}</Col>
-              <Col span={6}><b>总金额（不含税）：</b>¥{detail.total_no_tax || 0}</Col>
-              <Col span={6}><b>利润率：</b>{detail.profit_margin || 0}%</Col>
-              <Col span={6}><b>实际利润：</b><span style={{ color: Number(detail.profit) >= 0 ? '#52c41a' : '#cf1322' }}>¥{Number(detail.profit || 0).toFixed(2)}</span></Col>
-            </Row>
-
-            <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b' }}>产品明细</Divider>
-            <Table
-              size="small"
-              rowKey="id"
-              loading={detailLoading}
-              dataSource={detail.items || []}
-              pagination={false}
+        {detailData && (
+          <div>
+            <div style={{ display: 'flex', gap: 24, marginBottom: 16, fontSize: 13, flexWrap: 'wrap' }}>
+              <div><b>订单号：</b>{detailData.order_no || `TMP-${detailData.id}`}</div>
+              <div><b>状态：</b><Tag color={getStatusColor(detailData.status)}>{detailData.status}</Tag></div>
+              <div><b>金额：</b><span style={{ color: '#dc2626', fontWeight: 600 }}>¥{Number(detailData.total_amount || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span></div>
+              <div><b>下单日期：</b>{detailData.order_date || '-'}</div>
+              <div><b>交货日期：</b>{detailData.delivery_date || '-'}</div>
+              <div><b>备注：</b>{detailData.remark || '-'}</div>
+            </div>
+            <Table rowKey="id" size="small" dataSource={detailItems} pagination={false}
               columns={[
-                { title: '产品', dataIndex: 'product_id', width: 200, render: (id: number) => {
-                    const p = productMap[id];
-                    if (!p) return `ID:${id}`;
-                    return <span><Tag color="blue">{p.code}</Tag>{p.name}</span>;
-                  } },
-                { title: '规格', key: 'spec', width: 120, render: (_: any, r: any) => productMap[r.product_id]?.spec || '-' },
+                { title: '序号', width: 50, render: (_: any, __: any, idx: number) => idx + 1 },
+                { title: '产品ID', dataIndex: 'product_id', width: 70 },
                 { title: '数量', dataIndex: 'quantity', width: 80, align: 'right' as const },
-                { title: '已发货', dataIndex: 'delivered_qty', width: 80, align: 'right' as const,
-                  render: (v: number) => v > 0 ? <span style={{ color: '#52c41a' }}>{v}</span> : '-' },
-                { title: '单价', dataIndex: 'unit_price', width: 90, align: 'right' as const, render: (v: number) => `¥${Number(v || 0).toFixed(2)}` },
-                { title: '金额', dataIndex: 'amount', width: 110, align: 'right' as const, render: (v: number) => <b style={{ color: '#cf1322' }}>¥{Number(v || 0).toFixed(2)}</b> },
-                { title: '客户产品编号', dataIndex: 'customer_product_code', width: 120, render: (v: string) => v || '-' },
-                { title: '交期', dataIndex: 'delivery_date', width: 110, render: (v: string) => v || '-' },
+                { title: '单价', dataIndex: 'unit_price', width: 90, align: 'right' as const, render: (v: number) => v ? `¥${v.toFixed(2)}` : '-' },
+                { title: '金额', dataIndex: 'amount', width: 100, align: 'right' as const, render: (v: number) => v ? `¥${v.toFixed(2)}` : '-' },
+                { title: '已发货', dataIndex: 'delivered_qty', width: 80, align: 'right' as const },
+                { title: '下单日期', dataIndex: 'order_date', width: 100, render: (v: string) => v || '-' },
+                { title: '交期', dataIndex: 'delivery_date', width: 90, render: (v: string) => v || '-' },
+                { title: '客户编码', dataIndex: 'customer_product_code', width: 90, render: (v: string) => v || '-' },
                 { title: '备注', dataIndex: 'remark', ellipsis: true },
               ]}
-              summary={(items) => {
-                const totalQty = items.reduce((s, i) => s + Number(i.quantity || 0), 0);
-                const totalDelivered = items.reduce((s, i) => s + Number(i.delivered_qty || 0), 0);
-                const totalAmt = items.reduce((s, i) => s + Number(i.amount || 0), 0);
-                return (
-                  <Table.Summary fixed>
-                    <Table.Summary.Row style={{ background: '#fafafa', fontWeight: 600 }}>
-                      <Table.Summary.Cell index={0}>合计（{items.length} 项）</Table.Summary.Cell>
-                      <Table.Summary.Cell index={1} />
-                      <Table.Summary.Cell index={2} align="right">{totalQty}</Table.Summary.Cell>
-                      <Table.Summary.Cell index={3} align="right"><span style={{ color: '#52c41a' }}>{totalDelivered}</span></Table.Summary.Cell>
-                      <Table.Summary.Cell index={4} />
-                      <Table.Summary.Cell index={5} align="right">¥{totalAmt.toFixed(2)}</Table.Summary.Cell>
-                      <Table.Summary.Cell index={6} />
-                      <Table.Summary.Cell index={7} />
-                      <Table.Summary.Cell index={8} />
-                    </Table.Summary.Row>
-                  </Table.Summary>
-                );
-              }}
             />
-
-            <Divider orientation="left" plain style={{ fontSize: 13, color: '#64748b' }}>备注</Divider>
-            <div style={{ padding: '0 0 16px', color: '#475569' }}>{detail.remark || '-'}</div>
-          </>
+          </div>
         )}
       </Modal>
     </div>

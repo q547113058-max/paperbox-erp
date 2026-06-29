@@ -39,7 +39,6 @@ const DeliveryList = lazy(() => import('./pages/DeliveryList'));
 // 新增：财务记录页面
 const SupplierReconciliation = lazy(() => import('./pages/SupplierReconciliation'));
 const AccountsReceivable = lazy(() => import('./pages/AccountsReceivable'));
-const AfterSales = lazy(() => import('./pages/AfterSales'));
 
 // 加载中组件 — 表格骨架（避免白屏闪烁，dw-skills §04 第 6 条）
 const Loading = () => <TableSkeleton rows={8} columns={6} />;
@@ -93,7 +92,6 @@ export default function App() {
                       {/* 财务记录 */}
                       <Route path="/supplier_reconciliation" element={<SupplierReconciliation />} />
                       <Route path="/accounts_receivable" element={<AccountsReceivable />} />
-                      <Route path="/after_sales" element={<AfterSales />} />
                     </Routes>
                   </Suspense>
                 </Layout>
