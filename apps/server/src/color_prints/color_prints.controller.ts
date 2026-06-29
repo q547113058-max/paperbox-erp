@@ -1,37 +1,14 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ColorPrintsService } from './color_prints.service';
-import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { CrudController } from '../common/crud.controller';
+import { ColorPrintsService } from './color_prints.service';
+import { ColorPrint } from '../entities/color_prints';
 
 @Controller('color_prints')
 @UseGuards(JwtAuthGuard, RolesGuard)
-export class ColorPrintsController {
-  constructor(private readonly service: ColorPrintsService) {}
-
-  @Get()
-  findAll() { return this.service.findAll(); }
-
-  @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.service.findOne(id);
-  }
-
-  @Post()
-  @Roles('boss', 'warehouse')
-  create(@Body() body: any) {
-    return this.service.create(body);
-  }
-
-  @Put(':id')
-  @Roles('boss', 'warehouse')
-  update(@Param('id', ParseIntPipe) id: number, @Body() body: any) {
-    return this.service.update(id, body);
-  }
-
-  @Delete(':id')
-  @Roles('boss')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.service.remove(id);
+export class ColorPrintsController extends CrudController<ColorPrint> {
+  constructor(service: ColorPrintsService) {
+    super(service);
   }
 }

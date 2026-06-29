@@ -1,22 +1,14 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ActionLogService } from './action_logs.service';
-import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { CrudController } from '../common/crud.controller';
+import { ActionLogService } from './action_logs.service';
+import { ActionLog } from '../entities/action_logs';
 
 @Controller('action_logs')
 @UseGuards(JwtAuthGuard, RolesGuard)
-export class ActionLogController {
-  constructor(private readonly service: ActionLogService) {}
-  @Get() findAll() { return this.service.findAll(); }
-  @Get(':id') findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
-  @Post()
-  @Roles('boss')
-  create(@Body() body: any) { return this.service.create(body); }
-  @Put(':id')
-  @Roles('boss')
-  update(@Param('id', ParseIntPipe) id: number, @Body() body: any) { return this.service.update(id, body); }
-  @Delete(':id')
-  @Roles('boss')
-  remove(@Param('id', ParseIntPipe) id: number) { return this.service.remove(id); }
+export class ActionLogController extends CrudController<ActionLog> {
+  constructor(service: ActionLogService) {
+    super(service);
+  }
 }

@@ -11,6 +11,7 @@ import type { Order, Product, Customer } from '../types/api';
 import api from '../utils/axios';
 import dayjs from 'dayjs';
 import { getStatusColor } from '../utils/statusColor';
+import { InlineItemEditor } from '../components/InlineItemEditor';
 
 const STATUS_OPTIONS = ['待确认', '已确认', '生产中', '待发货', '已完成', '已取消'];
 
@@ -266,23 +267,23 @@ export default function Orders() {
 
   // ====== 明细表列（按用户要求的新列序） ======
   const itemColumns = [
-    { title: '序号', width: 50, render: (_: any, __: any, idx: number) => idx + 1 },
+    { key: 'idx', title: '序号', width: 50, render: (_: any, __: any, idx: number) => idx + 1 },
     {
-      title: '客户编码', dataIndex: 'customer_code', width: 100,
+      key: 'customer_code', title: '客户编码', dataIndex: 'customer_code', width: 100,
       render: (v: string, r: OrderItemRow) => (
         <Input size="small" value={v} style={{ width: 95 }}
           onChange={e => setItems(prev => prev.map(it => it.key === r.key ? { ...it, customer_code: e.target.value } : it))} />
       ),
     },
     {
-      title: '物料编码', dataIndex: 'material_code', width: 100,
+      key: 'material_code', title: '物料编码', dataIndex: 'material_code', width: 100,
       render: (v: string) => <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{v || '-'}</span>,
     },
-    { title: '物料名称', dataIndex: 'material_name', width: 120 },
-    { title: '物料规格', dataIndex: 'material_spec', width: 100 },
-    { title: '单位', dataIndex: 'unit', width: 60 },
+    { key: 'material_name', title: '物料名称', dataIndex: 'material_name', width: 120 },
+    { key: 'material_spec', title: '物料规格', dataIndex: 'material_spec', width: 100 },
+    { key: 'unit', title: '单位', dataIndex: 'unit', width: 60 },
     {
-      title: '数量', dataIndex: 'quantity', width: 80, align: 'right' as const,
+      key: 'quantity', title: '数量', dataIndex: 'quantity', width: 80, align: 'right' as const,
       render: (v: number, r: OrderItemRow) => (
         <InputNumber size="small" min={0} value={v} style={{ width: 70 }}
           onChange={val => {
@@ -292,7 +293,7 @@ export default function Orders() {
       ),
     },
     {
-      title: '单价', dataIndex: 'unit_price', width: 90, align: 'right' as const,
+      key: 'unit_price', title: '单价', dataIndex: 'unit_price', width: 90, align: 'right' as const,
       render: (v: number, r: OrderItemRow) => (
         <InputNumber size="small" min={0} step={0.01} value={v} style={{ width: 85 }}
           onChange={val => {
@@ -302,35 +303,35 @@ export default function Orders() {
       ),
     },
     {
-      title: '总价', dataIndex: 'amount', width: 100, align: 'right' as const,
+      key: 'amount', title: '总价', dataIndex: 'amount', width: 100, align: 'right' as const,
       render: (_: number, r: OrderItemRow) => {
         const amt = r.amount || r.quantity * (r.unit_price || 0);
         return <span style={{ fontWeight: 600, color: '#dc2626' }}>¥{amt.toFixed(2)}</span>;
       },
     },
     {
-      title: '下单日期', dataIndex: 'order_date', width: 115,
+      key: 'order_date', title: '下单日期', dataIndex: 'order_date', width: 115,
       render: (v: string, r: OrderItemRow) => (
         <DatePicker size="small" value={v ? dayjs(v) : null} style={{ width: 108 }}
           onChange={d => setItems(prev => prev.map(it => it.key === r.key ? { ...it, order_date: d?.format('YYYY-MM-DD') || '' } : it))} />
       ),
     },
     {
-      title: '交期', dataIndex: 'delivery_date', width: 115,
+      key: 'delivery_date', title: '交期', dataIndex: 'delivery_date', width: 115,
       render: (v: string, r: OrderItemRow) => (
         <DatePicker size="small" value={v ? dayjs(v) : null} style={{ width: 108 }}
           onChange={d => setItems(prev => prev.map(it => it.key === r.key ? { ...it, delivery_date: d?.format('YYYY-MM-DD') || '' } : it))} />
       ),
     },
     {
-      title: '备注', dataIndex: 'remark', width: 130,
+      key: 'remark', title: '备注', dataIndex: 'remark', width: 130,
       render: (v: string, r: OrderItemRow) => (
         <Input size="small" value={v} style={{ width: 120 }}
           onChange={e => setItems(prev => prev.map(it => it.key === r.key ? { ...it, remark: e.target.value } : it))} />
       ),
     },
     {
-      title: '操作', width: 60, fixed: 'right' as const,
+      key: 'action', title: '操作', width: 60, fixed: 'right' as const,
       render: (_: any, r: OrderItemRow) => (
         <Button size="small" type="link" danger onClick={() => handleRemoveItem(r.key)}>删除</Button>
       ),
@@ -377,55 +378,41 @@ export default function Orders() {
         </Form>
       </div>
 
-      {/* ====== 添加物料工具栏 ====== */}
-      <div style={{ background: '#e6f7ff', border: '1px solid #91d5ff', borderRadius: 6, padding: '8px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#0050b3', whiteSpace: 'nowrap' }}>添加物料明细</span>
-        <Select
-          showSearch
-          value={searchProductId}
-          onChange={setSearchProductId}
-          placeholder="搜索物料编码/名称/规格（自动弹出可选物料）"
-          style={{ minWidth: 320, flex: 1 }}
-          optionFilterProp="label"
-          options={productOptions}
-          allowClear
-          notFoundContent="未找到匹配物料"
-        />
-        <span style={{ fontSize: 13, color: '#595959' }}>数量</span>
-        <InputNumber min={1} value={addQuantity} onChange={v => setAddQuantity(v || 1)} style={{ width: 80 }} />
-        <span style={{ fontSize: 13, color: '#595959' }}>单价</span>
-        <InputNumber min={0} step={0.01} value={addUnitPrice} onChange={v => setAddUnitPrice(v || 0)} style={{ width: 100 }} />
-        <Button type="primary" onClick={handleAddItem} icon={<PlusOutlined />}>添加</Button>
-      </div>
-
-      {/* ====== 明细表格 ====== */}
-      <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <Table
-          rowKey="key"
-          size="small"
-          columns={itemColumns}
-          dataSource={items}
-          pagination={false}
-          scroll={{ x: 1400, y: 400 }}
-          locale={{ emptyText: '暂无明细。请在上方搜索物料后添加（输入物料编码/名称可自动弹出已录入物料供选择）' }}
-          summary={() => items.length > 0 ? (
-            <Table.Summary.Row>
-              <Table.Summary.Cell index={0} colSpan={6}>
-                <b style={{ fontSize: 14 }}>合计</b>
-              </Table.Summary.Cell>
-              <Table.Summary.Cell index={6} align="right">
-                <b>{items.reduce((s, it) => s + it.quantity, 0)}</b>
-              </Table.Summary.Cell>
-              <Table.Summary.Cell index={7} colSpan={2}>
-                <b style={{ fontSize: 15, color: '#dc2626' }}>
-                  ¥{totalAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
-                </b>
-              </Table.Summary.Cell>
-              <Table.Summary.Cell index={9} colSpan={4} />
-            </Table.Summary.Row>
-          ) : undefined}
-        />
-      </div>
+      {/* ====== 物料明细编辑 ====== */}
+      <InlineItemEditor
+        toolbarTitle="添加物料明细"
+        searchValue={searchProductId}
+        onSearchChange={setSearchProductId}
+        searchOptions={productOptions}
+        searchPlaceholder="搜索物料编码/名称/规格（自动弹出可选物料）"
+        quantityLabel="数量"
+        quantityValue={addQuantity}
+        onQuantityChange={v => setAddQuantity(v || 1)}
+        priceLabel="单价"
+        priceValue={addUnitPrice}
+        onPriceChange={v => setAddUnitPrice(v || 0)}
+        addButtonText="添加"
+        onAddItem={handleAddItem}
+        items={items}
+        columns={itemColumns}
+        emptyText="暂无明细。请在上方搜索物料后添加（输入物料编码/名称可自动弹出已录入物料供选择）"
+        renderSummary={(its) => its.length > 0 ? (
+          <Table.Summary.Row>
+            <Table.Summary.Cell index={0} colSpan={6}>
+              <b style={{ fontSize: 14 }}>合计</b>
+            </Table.Summary.Cell>
+            <Table.Summary.Cell index={6} align="right">
+              <b>{its.reduce((s, it) => s + it.quantity, 0)}</b>
+            </Table.Summary.Cell>
+            <Table.Summary.Cell index={7} colSpan={2}>
+              <b style={{ fontSize: 15, color: '#dc2626' }}>
+                ¥{totalAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+              </b>
+            </Table.Summary.Cell>
+            <Table.Summary.Cell index={9} colSpan={4} />
+          </Table.Summary.Row>
+        ) : null}
+      />
 
       {/* ====== 底部操作按钮 ====== */}
       <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>

@@ -1,22 +1,14 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { WorkshopInventoryLogService } from './workshop_inventory_logs.service';
-import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { CrudController } from '../common/crud.controller';
+import { WorkshopInventoryLogService } from './workshop_inventory_logs.service';
+import { WorkshopInventoryLog } from '../entities/workshop_inventory_logs';
 
 @Controller('workshop_inventory_logs')
 @UseGuards(JwtAuthGuard, RolesGuard)
-export class WorkshopInventoryLogController {
-  constructor(private readonly service: WorkshopInventoryLogService) {}
-  @Get() findAll() { return this.service.findAll(); }
-  @Get(':id') findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
-  @Post()
-  @Roles('boss')
-  create(@Body() body: any) { return this.service.create(body); }
-  @Put(':id')
-  @Roles('boss')
-  update(@Param('id', ParseIntPipe) id: number, @Body() body: any) { return this.service.update(id, body); }
-  @Delete(':id')
-  @Roles('boss')
-  remove(@Param('id', ParseIntPipe) id: number) { return this.service.remove(id); }
+export class WorkshopInventoryLogController extends CrudController<WorkshopInventoryLog> {
+  constructor(service: WorkshopInventoryLogService) {
+    super(service);
+  }
 }

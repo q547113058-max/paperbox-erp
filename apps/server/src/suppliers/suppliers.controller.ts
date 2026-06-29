@@ -1,39 +1,14 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { SuppliersService } from './suppliers.service';
-import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { CrudController } from '../common/crud.controller';
+import { SuppliersService } from './suppliers.service';
+import { Supplier } from '../entities/suppliers';
 
 @Controller('suppliers')
 @UseGuards(JwtAuthGuard, RolesGuard)
-export class SuppliersController {
-  constructor(private readonly service: SuppliersService) {}
-
-  @Get()
-  findAll() {
-    return this.service.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.service.findOne(id);
-  }
-
-  @Post()
-  @Roles('boss', 'warehouse')
-  create(@Body() body: any) {
-    return this.service.create(body);
-  }
-
-  @Put(':id')
-  @Roles('boss', 'warehouse')
-  update(@Param('id', ParseIntPipe) id: number, @Body() body: any) {
-    return this.service.update(id, body);
-  }
-
-  @Delete(':id')
-  @Roles('boss')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.service.remove(id);
+export class SuppliersController extends CrudController<Supplier> {
+  constructor(service: SuppliersService) {
+    super(service);
   }
 }
