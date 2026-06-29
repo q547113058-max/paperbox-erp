@@ -47,7 +47,7 @@ export default function Personnel() {
 
   const openDetail = (p: Personnel) => { setDetail(p); setDetailOpen(true); };
 
-  const statusColor = { '在职': 'green', '离职': 'red', '休假': 'orange' };
+  const statusColor: Record<string, string> = { '在职': 'green', '离职': 'red', '休假': 'orange' };
 
   const columns = [
     { title: '姓名', dataIndex: 'name', key: 'name', render: (v: string) => v || '-' },

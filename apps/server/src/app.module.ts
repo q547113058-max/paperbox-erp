@@ -1,5 +1,6 @@
 import { Module, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { DataSource } from 'typeorm';
 import Database from 'better-sqlite3';
 import { AuthModule } from './auth/auth.module';
@@ -87,6 +88,7 @@ const DB_PATH = process.env.DB_PATH || '/home/ubuntu/data/erp-new/erp.db';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 10 }]),
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
       database: DB_PATH,

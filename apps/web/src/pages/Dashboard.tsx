@@ -123,7 +123,7 @@ export default function Dashboard() {
           <DatePicker
             picker={period === '日' ? 'date' : period === '月' ? 'month' : 'year'}
             value={null}
-            onChange={(d) => {
+            onChange={(d: any) => {
               if (d) setDate(d.format(period === '年' ? 'YYYY' : 'YYYY-MM'));
             }}
             placeholder="选择日期"
