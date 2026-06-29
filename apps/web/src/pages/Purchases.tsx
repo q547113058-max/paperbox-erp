@@ -6,7 +6,7 @@ import {
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined,
   SearchOutlined, DownloadOutlined, EyeOutlined, CheckOutlined,
-  InboxOutlined, PrinterOutlined, StopOutlined, MoreOutlined,
+  InboxOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Purchase, Supplier } from '../types/api';

@@ -71,8 +71,16 @@ export class WorkOrdersService {
     const created: WorkOrder[] = [];
     const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
 
+    // Preload all products to avoid N+1 queries
+    const productIds = [...new Set(orderItems.map((item: any) => item.product_id).filter(Boolean))];
+    const products = await this.productRepo.find({ where: { id: (productIds.length > 0 ? { $in: productIds } as any : []) } });
+    const productMap = new Map<number, Product>();
+    for (const p of products) {
+      productMap.set(p.id, p);
+    }
+
     for (const item of orderItems) {
-      const product = await this.productRepo.findOne({ where: { id: item.product_id } });
+      const product = productMap.get(item.product_id);
       if (!product) continue;
 
       // 跳过已存在工单的明细
@@ -344,12 +352,10 @@ export class WorkOrdersService {
 
         // 更新产品库存
         if (wo.product_id) {
-          await manager
-            .createQueryBuilder()
-            .update(Product)
-            .set({ stock_qty: () => `stock_qty + ${enterableQty}` })
-            .where('id = :pid', { pid: wo.product_id })
-            .execute();
+          await manager.query(
+            'UPDATE products SET stock_qty = stock_qty + ? WHERE id = ?',
+            [enterableQty, wo.product_id],
+          );
 
           const log = manager.create(StockLog, {
             product_id: wo.product_id,
@@ -392,8 +398,17 @@ export class WorkOrdersService {
       if (!order) continue;
 
       const orderItems = await this.orderItemRepo.find({ where: { order_id: orderId } });
+
+      // Preload products for this order's items
+      const productIds = [...new Set(orderItems.map((item: any) => item.product_id).filter(Boolean))];
+      const products = await this.productRepo.find({ where: productIds.length > 0 ? { id: { $in: productIds } as any } : {} });
+      const productMap = new Map<number, Product>();
+      for (const p of products) {
+        productMap.set(p.id, p);
+      }
+
       for (const item of orderItems) {
-        const product = await this.productRepo.findOne({ where: { id: item.product_id } });
+        const product = productMap.get(item.product_id);
         if (!product) continue;
 
         const existing = await this.repo.findOne({ where: { order_id: orderId, product_id: item.product_id } });

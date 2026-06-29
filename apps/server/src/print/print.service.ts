@@ -28,6 +28,15 @@ export class PrintService {
     private readonly companyRepo: Repository<Company>,
   ) {}
 
+  private escapeHtml(str: string | null | undefined): string {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   async generateDeliveryHtml(deliveryId: number): Promise<string> {
     const delivery = await this.deliveryRepo.findOne({ where: { id: deliveryId } });
     if (!delivery) throw new NotFoundException('Delivery not found');
@@ -42,7 +51,7 @@ export class PrintService {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>送货单 ${delivery.delivery_no}</title>
+  <title>送货单 ${this.escapeHtml(delivery.delivery_no)}</title>
   <style>
     body { font-family: 'Noto Sans SC', sans-serif; font-size: 14px; }
     .header { display: flex; justify-content: space-between; margin-bottom: 20px; }
@@ -62,22 +71,22 @@ export class PrintService {
 <body>
   <div class="header">
     <div class="company-info">
-      <h2>${company?.name || '公司名称'}</h2>
-      <p>地址: ${company?.address || '-'}</p>
-      <p>电话: ${company?.phone || '-'}</p>
+      <h2>${this.escapeHtml(company?.name) || '公司名称'}</h2>
+      <p>地址: ${this.escapeHtml(company?.address) || '-'}</p>
+      <p>电话: ${this.escapeHtml(company?.phone) || '-'}</p>
     </div>
     <div class="delivery-info">
       <h1>送货单</h1>
-      <p>单号: ${delivery.delivery_no}</p>
-      <p>日期: ${delivery.delivery_date}</p>
+      <p>单号: ${this.escapeHtml(delivery.delivery_no)}</p>
+      <p>日期: ${this.escapeHtml(delivery.delivery_date)}</p>
     </div>
   </div>
 
   <div>
-    <p><strong>客户:</strong> ${customer?.name || '-'}</p>
-    <p><strong>地址:</strong> ${customer?.address || '-'}</p>
-    <p><strong>联系人:</strong> ${customer?.contact || '-'}</p>
-    <p><strong>电话:</strong> ${customer?.phone || '-'}</p>
+    <p><strong>客户:</strong> ${this.escapeHtml(customer?.name) || '-'}</p>
+    <p><strong>地址:</strong> ${this.escapeHtml(customer?.address) || '-'}</p>
+    <p><strong>联系人:</strong> ${this.escapeHtml(customer?.contact) || '-'}</p>
+    <p><strong>电话:</strong> ${this.escapeHtml(customer?.phone) || '-'}</p>
   </div>
 
   <table>
@@ -99,7 +108,7 @@ export class PrintService {
           <td>-</td>
           <td>${item.quantity}</td>
           <td>个</td>
-          <td>${item.remark || '-'}</td>
+          <td>${this.escapeHtml(item.remark) || '-'}</td>
         </tr>
       `).join('')}
     </tbody>
@@ -127,7 +136,7 @@ export class PrintService {
     if (!bill) throw new NotFoundException('Reconciliation bill not found');
 
     const items = await this.reconciliationItemRepo.find({ where: { bill_id: billId } });
-    const customer = await this.customerRepo.findOne({ where: { id: bill.customer_id } });
+    const customer = bill.customer_id ? await this.customerRepo.findOne({ where: { id: bill.customer_id } }) : null;
     const company = await this.companyRepo.findOne({ where: { id: 1 } });
 
     return `
@@ -135,7 +144,7 @@ export class PrintService {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>对账单 ${bill.bill_no}</title>
+  <title>对账单 ${this.escapeHtml(bill.bill_no)}</title>
   <style>
     body { font-family: 'Noto Sans SC', sans-serif; font-size: 14px; }
     .header { display: flex; justify-content: space-between; margin-bottom: 20px; }
@@ -153,18 +162,18 @@ export class PrintService {
 <body>
   <div class="header">
     <div>
-      <h2>${company?.name || '公司名称'}</h2>
-      <p>对账期间: ${bill.period_start} 至 ${bill.period_end}</p>
+      <h2>${this.escapeHtml(company?.name) || '公司名称'}</h2>
+      <p>对账期间: ${this.escapeHtml(bill.period_start)} 至 ${this.escapeHtml(bill.period_end)}</p>
     </div>
     <div style="text-align: right;">
       <h1>对账单</h1>
-      <p>单号: ${bill.bill_no}</p>
-      <p>日期: ${bill.created_at}</p>
+      <p>单号: ${this.escapeHtml(bill.bill_no)}</p>
+      <p>日期: ${this.escapeHtml(bill.created_at)}</p>
     </div>
   </div>
 
   <div>
-    <p><strong>客户:</strong> ${customer?.name || '-'}</p>
+    <p><strong>客户:</strong> ${this.escapeHtml(customer?.name) || '-'}</p>
   </div>
 
   <table>
@@ -182,10 +191,10 @@ export class PrintService {
     <tbody>
       ${items.map(item => `
         <tr>
-          <td>${item.delivery_date}</td>
-          <td>${item.delivery_no || '-'}</td>
-          <td>${item.product_name || '-'}</td>
-          <td>${item.quantity || '-'}</td>
+          <td>${this.escapeHtml(item.delivery_date)}</td>
+          <td>${this.escapeHtml(item.delivery_no) || '-'}</td>
+          <td>${this.escapeHtml(item.product_name) || '-'}</td>
+          <td>${item.quantity ?? '-'}</td>
           <td>${item.amount}</td>
           <td>-</td>
           <td>-</td>
@@ -221,7 +230,7 @@ export class PrintService {
     const order = await this.orderRepo.findOne({ where: { id: orderId } });
     if (!order) throw new NotFoundException('Order not found');
 
-    const customer = await this.customerRepo.findOne({ where: { id: order.customer_id } });
+    const customer = order.customer_id ? await this.customerRepo.findOne({ where: { id: order.customer_id } }) : null;
     const company = await this.companyRepo.findOne({ where: { id: 1 } });
 
     return `
@@ -229,7 +238,7 @@ export class PrintService {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>订单 ${order.order_no}</title>
+  <title>订单 ${this.escapeHtml(order.order_no)}</title>
   <style>
     body { font-family: 'Noto Sans SC', sans-serif; font-size: 14px; }
     .header { display: flex; justify-content: space-between; margin-bottom: 20px; }
@@ -246,25 +255,25 @@ export class PrintService {
 <body>
   <div class="header">
     <div>
-      <h2>${company?.name || '公司名称'}</h2>
+      <h2>${this.escapeHtml(company?.name) || '公司名称'}</h2>
     </div>
     <div style="text-align: right;">
       <h1>销售订单</h1>
-      <p>订单号: ${order.order_no}</p>
-      <p>日期: ${order.order_date}</p>
+      <p>订单号: ${this.escapeHtml(order.order_no)}</p>
+      <p>日期: ${this.escapeHtml(order.order_date)}</p>
     </div>
   </div>
 
   <div class="info-grid">
     <div>
-      <p><strong>客户:</strong> ${customer?.name || '-'}</p>
-      <p><strong>联系人:</strong> ${customer?.contact || '-'}</p>
-      <p><strong>电话:</strong> ${customer?.phone || '-'}</p>
+      <p><strong>客户:</strong> ${this.escapeHtml(customer?.name) || '-'}</p>
+      <p><strong>联系人:</strong> ${this.escapeHtml(customer?.contact) || '-'}</p>
+      <p><strong>电话:</strong> ${this.escapeHtml(customer?.phone) || '-'}</p>
     </div>
     <div>
-      <p><strong>交货日期:</strong> ${order.delivery_date}</p>
-      <p><strong>状态:</strong> ${order.status}</p>
-      <p><strong>客户单号:</strong> ${order.customer_order_no || '-'}</p>
+      <p><strong>交货日期:</strong> ${this.escapeHtml(order.delivery_date)}</p>
+      <p><strong>状态:</strong> ${this.escapeHtml(order.status)}</p>
+      <p><strong>客户单号:</strong> ${this.escapeHtml(order.customer_order_no) || '-'}</p>
     </div>
   </div>
 
@@ -276,14 +285,14 @@ export class PrintService {
       </tr>
     </thead>
     <tbody>
-      <tr><td>印刷名称</td><td>${order.print_name || '-'}</td></tr>
-      <tr><td>客户尺寸</td><td>${order.customer_size || '-'}</td></tr>
-      <tr><td>刀模尺寸</td><td>${order.die_size || '-'}</td></tr>
-      <tr><td>数量</td><td>${order.quantity || '-'}</td></tr>
-      <tr><td>面纸</td><td>${order.face_material || '-'}</td></tr>
-      <tr><td>瓦楞</td><td>${order.medium_material || '-'}</td></tr>
-      <tr><td>印刷颜色</td><td>${order.print_color || '-'}</td></tr>
-      <tr><td>表面处理</td><td>${order.surface_process || '-'}</td></tr>
+      <tr><td>印刷名称</td><td>${this.escapeHtml(order.print_name) || '-'}</td></tr>
+      <tr><td>客户尺寸</td><td>${this.escapeHtml(order.customer_size) || '-'}</td></tr>
+      <tr><td>刀模尺寸</td><td>${this.escapeHtml(order.die_size) || '-'}</td></tr>
+      <tr><td>数量</td><td>${order.quantity ?? '-'}</td></tr>
+      <tr><td>面纸</td><td>${this.escapeHtml(order.face_material) || '-'}</td></tr>
+      <tr><td>瓦楞</td><td>${this.escapeHtml(order.medium_material) || '-'}</td></tr>
+      <tr><td>印刷颜色</td><td>${this.escapeHtml(order.print_color) || '-'}</td></tr>
+      <tr><td>表面处理</td><td>${this.escapeHtml(order.surface_process) || '-'}</td></tr>
     </tbody>
   </table>
 
@@ -301,7 +310,7 @@ export class PrintService {
     </tbody>
   </table>
 
-  <p><strong>备注:</strong> ${order.remark || '-'}</p>
+  <p><strong>备注:</strong> ${this.escapeHtml(order.remark) || '-'}</p>
 
   <div class="no-print" style="margin-top: 20px; text-align: center;">
     <button onclick="window.print()">打印</button>

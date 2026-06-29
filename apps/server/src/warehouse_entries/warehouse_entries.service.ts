@@ -111,12 +111,10 @@ export class WarehouseEntriesService {
 
       // 更新产品库存
       if (workOrder.product_id) {
-        await manager
-          .createQueryBuilder()
-          .update(Product)
-          .set({ stock_qty: () => `stock_qty + ${quantity}` })
-          .where('id = :id', { id: workOrder.product_id })
-          .execute();
+        await manager.query(
+          'UPDATE products SET stock_qty = stock_qty + ? WHERE id = ?',
+          [quantity, workOrder.product_id],
+        );
 
         // 写库存变动日志
         const log = manager.create(StockLog, {
@@ -197,12 +195,10 @@ export class WarehouseEntriesService {
 
       // 更新产品库存
       if (wo.product_id) {
-        await manager
-          .createQueryBuilder()
-          .update(Product)
-          .set({ stock_qty: () => `stock_qty + ${quantity}` })
-          .where('id = :id', { id: wo.product_id })
-          .execute();
+        await manager.query(
+          'UPDATE products SET stock_qty = stock_qty + ? WHERE id = ?',
+          [quantity, wo.product_id],
+        );
 
         const log = manager.create(StockLog, {
           product_id: wo.product_id,
@@ -407,19 +403,27 @@ export class WarehouseEntriesService {
       order: { id: 'ASC' },
     });
 
-    // 计算每个进仓单的已发货数量
-    const entriesWithDelivery = await Promise.all(
-      entries.map(async entry => {
-        const result = await this.deliveryItemRepo
+    // 计算每个进仓单的已发货数量 (batch query)
+    const entryIds = entries.map(e => e.id);
+    const deliveredQtys = entryIds.length > 0
+      ? await this.deliveryItemRepo
           .createQueryBuilder('di')
           .innerJoin(Delivery, 'd', 'd.id = di.delivery_id')
-          .select('COALESCE(SUM(di.quantity), 0)', 'total')
-          .where('di.warehouse_entry_id = :entryId', { entryId: entry.id })
+          .select('di.warehouse_entry_id', 'entry_id')
+          .addSelect('COALESCE(SUM(di.quantity), 0)', 'total')
+          .where('di.warehouse_entry_id IN (:...ids)', { ids: entryIds })
           .andWhere('d.status != :cancel', { cancel: '已取消' })
-          .getRawOne();
-        return { ...entry, delivered_qty: Number(result?.total) || 0 };
-      }),
-    );
+          .groupBy('di.warehouse_entry_id')
+          .getRawMany()
+      : [];
+    const deliveredMap = new Map<number, number>();
+    for (const d of deliveredQtys) {
+      deliveredMap.set(d.entry_id, Number(d.total) || 0);
+    }
+    const entriesWithDelivery = entries.map(entry => ({
+      ...entry,
+      delivered_qty: deliveredMap.get(entry.id) || 0,
+    }));
 
     const product = wo.product_id ? await this.productRepo.findOne({ where: { id: wo.product_id } }) : null;
 

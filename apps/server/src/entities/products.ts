@@ -11,20 +11,20 @@ export class Product {
   @Column('varchar', { nullable: true })
   name: string | null;
 
-  @Column('varchar')
-  spec: string;
+  @Column('varchar', { nullable: true })
+  spec: string | null;
 
-  @Column('float')
-  length: number;
+  @Column('float', { nullable: true })
+  length: number | null;
 
-  @Column('float')
-  width: number;
+  @Column('float', { nullable: true })
+  width: number | null;
 
-  @Column('float')
-  height: number;
+  @Column('float', { nullable: true })
+  height: number | null;
 
-  @Column('varchar')
-  material: string;
+  @Column('varchar', { nullable: true })
+  material: string | null;
 
   @Column('float', { default: 0 })
   unit_price: number;
@@ -38,100 +38,100 @@ export class Product {
   @Column('float', { default: 0 })
   safety_stock: number;
 
-  @Column('varchar')
-  created_at: string;
+  @Column('varchar', { nullable: true })
+  created_at: string | null;
 
   @Column('varchar', { default: '平口箱' })
   box_type: string;
 
-  @Column('varchar')
-  option_image: string;
+  @Column('varchar', { nullable: true })
+  option_image: string | null;
 
-  @Column('varchar')
-  knife_die: string;
+  @Column('varchar', { nullable: true })
+  knife_die: string | null;
 
-  @Column('varchar')
-  print_plate: string;
+  @Column('varchar', { nullable: true })
+  print_plate: string | null;
 
   @Column('varchar', { nullable: true, default: '正常生产' })
   status: string | null;
 
-  @Column('varchar')
-  product_type: string;
+  @Column('varchar', { nullable: true })
+  product_type: string | null;
 
-  @Column('varchar')
-  finished_spec: string;
+  @Column('varchar', { nullable: true })
+  finished_spec: string | null;
 
-  @Column('varchar')
-  box_shape: string;
+  @Column('varchar', { nullable: true })
+  box_shape: string | null;
 
-  @Column('varchar')
-  face_paper: string;
+  @Column('varchar', { nullable: true })
+  face_paper: string | null;
 
-  @Column('varchar')
-  corrugated_paper: string;
+  @Column('varchar', { nullable: true })
+  corrugated_paper: string | null;
 
-  @Column('varchar')
-  print_colors: string;
+  @Column('varchar', { nullable: true })
+  print_colors: string | null;
 
-  @Column('varchar')
-  surface_treatment: string;
+  @Column('varchar', { nullable: true })
+  surface_treatment: string | null;
 
-  @Column('varchar')
-  processing: string;
+  @Column('varchar', { nullable: true })
+  processing: string | null;
 
-  @Column('varchar')
-  accessories: string;
+  @Column('varchar', { nullable: true })
+  accessories: string | null;
 
-  @Column('varchar')
-  board_material: string;
+  @Column('varchar', { nullable: true })
+  board_material: string | null;
 
-  @Column('varchar')
-  board_spec: string;
+  @Column('varchar', { nullable: true })
+  board_spec: string | null;
 
-  @Column('varchar')
-  colors: string;
+  @Column('varchar', { nullable: true })
+  colors: string | null;
 
-  @Column('varchar')
-  unit: string;
+  @Column('varchar', { nullable: true })
+  unit: string | null;
 
-  @Column('int')
-  knife_die_id: number;
+  @Column('int', { nullable: true })
+  knife_die_id: number | null;
 
-  @Column('varchar')
-  face_paper_size: string;
+  @Column('varchar', { nullable: true })
+  face_paper_size: string | null;
 
-  @Column('varchar')
-  corrugated_paper_size: string;
+  @Column('varchar', { nullable: true })
+  corrugated_paper_size: string | null;
 
-  @Column('varchar')
-  finished_product_image: string;
+  @Column('varchar', { nullable: true })
+  finished_product_image: string | null;
 
-  @Column('varchar')
-  flute_type: string;
+  @Column('varchar', { nullable: true })
+  flute_type: string | null;
 
-  @Column('varchar')
-  face_paper_2: string;
+  @Column('varchar', { nullable: true })
+  face_paper_2: string | null;
 
-  @Column('varchar')
-  face_paper_size_2: string;
+  @Column('varchar', { nullable: true })
+  face_paper_size_2: string | null;
 
-  @Column('varchar')
-  corrugated_paper_2: string;
+  @Column('varchar', { nullable: true })
+  corrugated_paper_2: string | null;
 
-  @Column('varchar')
-  corrugated_paper_size_2: string;
+  @Column('varchar', { nullable: true })
+  corrugated_paper_size_2: string | null;
 
-  @Column('int')
-  knife_die_id_2: number;
+  @Column('int', { nullable: true })
+  knife_die_id_2: number | null;
 
-  @Column('varchar')
-  knife_die_2: string;
+  @Column('varchar', { nullable: true })
+  knife_die_2: string | null;
 
-  @Column('varchar')
-  customer_code: string;
+  @Column('varchar', { nullable: true })
+  customer_code: string | null;
 
-  @Column('varchar')
-  remark: string;
+  @Column('varchar', { nullable: true })
+  remark: string | null;
 
 }

@@ -11,7 +11,7 @@ import { Account } from '../entities/accounts';
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'paperbox-erp-jwt-secret-change-in-production',
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '8h' },
     }),
     TypeOrmModule.forFeature([Account]),

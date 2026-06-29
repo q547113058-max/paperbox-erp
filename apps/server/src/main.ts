@@ -18,7 +18,7 @@ async function bootstrap() {
     res.sendFile(join(__dirname, '..', '..', 'web', 'dist', 'index.html'));
   });
   app.enableCors({
-    origin: true,
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3005',
     credentials: true,
   });
 

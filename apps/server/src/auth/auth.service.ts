@@ -18,16 +18,8 @@ export class AuthService {
     const account = await this.accountRepo.findOne({ where: { username } });
     if (!account || !account.password) return null;
 
-    // bcrypt hash
-    if (account.password.startsWith('$2')) {
-      const valid = await bcrypt.compare(password, account.password);
-      if (!valid) return null;
-    } else {
-      // legacy plaintext — verify and upgrade
-      if (account.password !== password) return null;
-      const hash = await bcrypt.hash(password, 10);
-      await this.accountRepo.update(account.id, { password: hash });
-    }
+    const valid = await bcrypt.compare(password, account.password);
+    if (!valid) return null;
     return account;
   }
 

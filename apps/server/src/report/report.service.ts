@@ -188,13 +188,14 @@ export class ReportService {
     const lastYearStart = `${year - 1}-${String(month + 1).padStart(2, '0')}-01`;
     const lastYearEnd = month === 11 ? `${year}-01-01` : `${year - 1}-${String(month + 2).padStart(2, '0')}-01`;
 
+    // WARNING: Production risk — loading all records without limits. Consider date-filtered queries.
     const [orders, purchases, purchaseItems, deliveries, financeRecords, customers] = await Promise.all([
-      this.orderRepo.find(),
-      this.purchaseRepo.find(),
-      this.purchaseItemRepo.find(),
-      this.deliveryRepo.find(),
-      this.financeRepo.find(),
-      this.customerRepo.find(),
+      this.orderRepo.find({ take: 2000 }),
+      this.purchaseRepo.find({ take: 2000 }),
+      this.purchaseItemRepo.find({ take: 5000 }),
+      this.deliveryRepo.find({ take: 2000 }),
+      this.financeRepo.find({ take: 5000 }),
+      this.customerRepo.find({ take: 500 }),
     ]);
 
     // --- 采购统计 ---

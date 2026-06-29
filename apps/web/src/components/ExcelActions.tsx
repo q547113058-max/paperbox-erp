@@ -46,7 +46,7 @@ export function ExcelActions({ entity, onImport }: ExcelActionsProps) {
       message.success(`导入成功: ${result.success} 条`);
       
       if (result.errors?.length > 0) {
-        console.warn('导入错误:', result.errors);
+        message.warning(`导入错误: ${result.errors.length} 条`);
       }
       
       onImport?.(result);

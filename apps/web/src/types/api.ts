@@ -155,15 +155,6 @@ export interface PurchaseItem {
   delivery_address: string;
 }
 
-export interface Supplier {
-  id: number;
-  name: string;
-  contact: string;
-  phone: string;
-  address: string;
-  status: string;
-}
-
 export interface WarehouseEntry {
   id: number;
   entry_no: string | null;
@@ -207,27 +198,6 @@ export interface DeliveryItem {
   remark?: string;
 }
 
-export interface WorkOrder {
-  id: number;
-  work_order_no: string | null;
-  order_id: number;
-  product_id: number;
-  quantity: number;
-  status: string;
-  worker: string;
-  created_at: string;
-  completed_at: string;
-  start_date: string;
-  end_date: string;
-  plan_qty: number;
-  completed_qty: number;
-  progress: number;
-  material: string;
-  box_type: string;
-  process_name: string;
-  remark: string;
-}
-
 export interface OrderItem {
   id: number;
   order_id: number;
@@ -268,25 +238,34 @@ export interface FinanceRecord {
 
 export interface WorkOrder {
   id: number;
+  work_order_no: string | null;
   prod_no: string | null;
   order_id: number;
   product_id: number;
   quantity: number | null;
   material_type: string;
+  material: string;
   box_type: string;
   board_length: number;
   board_width: number;
   board_area: number;
   labor_hours: number;
   processes: string;
+  process_name: string;
   status: string;
   priority: string;
   worker: string;
+  start_date: string;
   start_time: string;
+  end_date: string;
   end_time: string;
+  plan_qty: number;
   completed_qty: number;
+  progress: number;
   materials_json: string;
   created_at: string;
+  completed_at: string;
+  remark: string;
   entry_code: string;
   finished_spec: string;
 }

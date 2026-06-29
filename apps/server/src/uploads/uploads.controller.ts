@@ -25,7 +25,16 @@ export class UploadsController {
 
   @Get(':filename')
   getFile(@Param('filename') filename: string, @Res() res: Response) {
-    const filePath = join(process.cwd(), 'uploads', filename);
+    // Reject path traversal attempts
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).json({ message: '无效的文件名' });
+    }
+    const uploadsDir = join(process.cwd(), 'uploads');
+    const filePath = join(uploadsDir, filename);
+    // Verify resolved path is within uploads directory
+    if (!filePath.startsWith(uploadsDir)) {
+      return res.status(400).json({ message: '无效的文件路径' });
+    }
     if (!existsSync(filePath)) {
       return res.status(404).json({ message: '文件不存在' });
     }

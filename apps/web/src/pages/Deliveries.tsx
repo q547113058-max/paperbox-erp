@@ -4,9 +4,9 @@ import {
   Select, DatePicker, InputNumber, Popconfirm,
 } from 'antd';
 import {
-  PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined,
+  PlusOutlined, DeleteOutlined, ReloadOutlined,
   SearchOutlined, DownloadOutlined, EyeOutlined, CarOutlined,
-  CheckCircleOutlined, PrinterOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Delivery, Order, Product, Customer } from '../types/api';

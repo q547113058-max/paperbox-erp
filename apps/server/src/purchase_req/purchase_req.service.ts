@@ -99,8 +99,16 @@ export class PurchaseReqService {
     const items = await this.orderItemRepo.find({ where: { order_id: orderId } });
     const allNeeds: Array<{ name: string; spec: string; unit: string; quantity: number }> = [];
 
+    // Preload products to avoid N+1
+    const productIds = [...new Set(items.map((item: any) => item.product_id).filter(Boolean))];
+    const products = await this.productRepo.find({ where: productIds.length > 0 ? { id: { $in: productIds } as any } : {} });
+    const productMap = new Map<number, Product>();
+    for (const p of products) {
+      productMap.set(p.id, p);
+    }
+
     for (const item of items) {
-      const product = await this.productRepo.findOne({ where: { id: item.product_id } });
+      const product = productMap.get(item.product_id);
       if (!product) continue;
       const needs = this.calculateMaterialNeeds(product, item.quantity || 0);
       allNeeds.push(...needs);
@@ -159,8 +167,16 @@ export class PurchaseReqService {
     const allNeeds: Array<{ name: string; spec: string; unit: string; quantity: number }> = [];
     const sourceProducts: any[] = [];
 
+    // Preload products to avoid N+1
+    const productIds = [...new Set(products.map((p: any) => p.product_id).filter(Boolean))];
+    const productList = await this.productRepo.find({ where: productIds.length > 0 ? { id: { $in: productIds } as any } : {} });
+    const productMap = new Map<number, Product>();
+    for (const p of productList) {
+      productMap.set(p.id, p);
+    }
+
     for (const { product_id, quantity } of products) {
-      const product = await this.productRepo.findOne({ where: { id: product_id } });
+      const product = productMap.get(product_id);
       if (!product) continue;
       const needs = this.calculateMaterialNeeds(product, quantity);
       allNeeds.push(...needs);

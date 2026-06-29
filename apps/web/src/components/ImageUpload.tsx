@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Upload, Button, message, Image } from 'antd';
-import { UploadOutlined, DeleteOutlined } from '@ant-design/icons';
+import { UploadOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd';
 import api from '../utils/axios';
 

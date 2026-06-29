@@ -1,12 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import {
   Table, Input, Button, Space, Tag, message, Modal, Form,
-  Select, DatePicker, InputNumber, Popconfirm, Tooltip,
+  Select, DatePicker, InputNumber,
 } from 'antd';
 import {
-  PlusOutlined, EditOutlined, DeleteOutlined,
-  EyeOutlined, CarOutlined,
-  ToolOutlined, SaveOutlined, ExclamationCircleOutlined,
+  PlusOutlined, EyeOutlined,
+  SaveOutlined, ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import type { Order, Product, Customer } from '../types/api';
 import api from '../utils/axios';
@@ -33,7 +32,6 @@ interface OrderItemRow {
 }
 
 export default function Orders() {
-  const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,28 +56,19 @@ export default function Orders() {
   const [detailItems, setDetailItems] = useState<any[]>([]);
 
   // ====== 数据加载 ======
-  const fetchAll = () => {
+  const loadRefData = () => {
     setLoading(true);
     Promise.all([
-      api.get('/orders'),
       api.get('/products').catch(() => ({ data: [] })),
       api.get('/customers').catch(() => ({ data: [] })),
-    ]).then(([o, p, c]) => {
-      setOrders(o.data || []);
+    ]).then(([p, c]) => {
       setProducts(p.data || []);
       setCustomers(c.data || []);
     }).catch(() => message.error('加载数据失败'))
       .finally(() => setLoading(false));
   };
 
-  const fetchOrders = () => {
-    setListLoading(true);
-    api.get('/orders').then(o => {
-      setOrders(o.data || []);
-    }).catch(() => {}).finally(() => setListLoading(false));
-  };
-
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { loadRefData(); }, []);
 
   // ====== 产品搜索选项（增强显示：编码 | 名称 | 规格 | 单位） ======
   const productOptions = useMemo(() =>
@@ -223,7 +212,6 @@ export default function Orders() {
         message.success('订单已创建');
       }
       resetForm();
-      fetchOrders();
     } catch (e: any) {
       if (!e.errorFields) message.error(e?.response?.data?.message || '保存失败');
     } finally {
@@ -245,13 +233,13 @@ export default function Orders() {
 
   // ====== 删除 ======
   const handleDelete = async (id: number) => {
-    try { await api.delete(`/orders/${id}`); message.success('已删除'); fetchOrders(); }
+    try { await api.delete(`/orders/${id}`); message.success('已删除'); }
     catch (e: any) { message.error(e?.response?.data?.message || '删除失败'); }
   };
 
   // ====== 状态推进 ======
   const handleStatusChange = async (order: Order, status: string) => {
-    try { await api.put(`/orders/${order.id}/status`, { status }); message.success('状态已更新'); fetchOrders(); }
+    try { await api.put(`/orders/${order.id}/status`, { status }); message.success('状态已更新'); }
     catch (e: any) { message.error(e?.response?.data?.message || '更新失败'); }
   };
 
@@ -259,7 +247,7 @@ export default function Orders() {
   const handleGenerateWorkOrder = async (order: Order) => {
     try {
       await api.post('/work_orders/from-order', { order_id: order.id });
-      message.success('工单已生成'); fetchOrders();
+      message.success('工单已生成');
     } catch (e: any) { message.error(e?.response?.data?.message || '生成失败'); }
   };
 
@@ -272,7 +260,7 @@ export default function Orders() {
         order_id: order.id,
         items: orderItems.map((it: any) => ({ product_id: it.product_id, quantity: it.quantity })),
       });
-      message.success('发货单已生成'); fetchOrders();
+      message.success('发货单已生成');
     } catch (e: any) { message.error(e?.response?.data?.message || '生成失败'); }
   };
 

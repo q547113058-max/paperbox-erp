@@ -1,3 +1,4 @@
+/* @deprecated - not registered in AppModule, no references */
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity('_sequences')

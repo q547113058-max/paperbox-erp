@@ -24,4 +24,4 @@ API=$(curl -s --noproxy '*' -o /dev/null -w "%{http_code}" http://localhost:3005
 echo ""
 echo "前端: HTTP $FRONTEND | API: HTTP $API"
 echo "访问: http://$(hostname -I | awk '{print $1}'):3005/"
-echo "登录: admin / admin123"
+echo "登录: boss / demo"

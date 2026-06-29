@@ -7,7 +7,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   handleRequest<TUser = any>(err: any, user: TUser, info: any): TUser {
-    console.log('[JwtAuthGuard] err:', err, 'user:', user, 'info:', info?.message);
+    // console.log('[JwtAuthGuard] err:', err, 'user:', user, 'info:', info?.message);
     if (err || !user) {
       throw err || new UnauthorizedException('未认证，请先登录');
     }

@@ -157,7 +157,7 @@ export default function Login() {
           <Form
             layout="vertical"
             onFinish={onFinish}
-            initialValues={{ username: 'boss', password: 'demo' }}
+            initialValues={import.meta.env.DEV ? { username: 'boss', password: 'demo' } : undefined}
             size="large"
           >
             <Form.Item name="username" label="账号" rules={[{ required: true }]}>
@@ -173,11 +173,13 @@ export default function Login() {
             </Form.Item>
           </Form>
 
+          {import.meta.env.DEV ? (
           <div style={{ textAlign: 'center', marginTop: 24 }}>
             <Text style={{ color: '#cbd5e1', fontSize: 12 }}>
               测试账号：boss / demo
             </Text>
           </div>
+          ) : null}
         </div>
       </div>
     </div>

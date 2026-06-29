@@ -176,10 +176,18 @@ export class DeliveriesService {
     delivery.delivery_time = data.delivery_time || now;
     const saved = await this.repo.save(delivery);
 
-    // 更新关联订单的发货进度
+    // 更新关联订单的发货进度 (batch preload to avoid N+1)
     const items = await this.itemRepo.find({ where: { delivery_id: id } });
+    const productIds = [...new Set(items.map(it => it.product_id).filter(Boolean))];
+    const orderItems = await this.orderItemRepo.find({
+      where: { order_id: delivery.order_id },
+    });
+    const orderItemMap = new Map<string, OrderItem>();
+    for (const oi of orderItems) {
+      orderItemMap.set(`${oi.order_id}_${oi.product_id}`, oi);
+    }
     for (const it of items) {
-      const oi = await this.orderItemRepo.findOne({ where: { order_id: delivery.order_id, product_id: it.product_id } });
+      const oi = orderItemMap.get(`${delivery.order_id}_${it.product_id}`);
       if (oi) {
         oi.delivered_qty = (oi.delivered_qty || 0) + it.quantity;
         await this.orderItemRepo.save(oi);
@@ -315,12 +323,10 @@ export class DeliveriesService {
 
         // 扣减产品库存
         if (item.product_id && item.quantity > 0) {
-          await manager
-            .createQueryBuilder()
-            .update(Product)
-            .set({ stock_qty: () => `stock_qty - ${item.quantity}` })
-            .where('id = :id', { id: item.product_id })
-            .execute();
+          await manager.query(
+            'UPDATE products SET stock_qty = stock_qty - ? WHERE id = ?',
+            [item.quantity, item.product_id],
+          );
         }
       }
 

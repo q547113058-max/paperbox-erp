@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FinanceRecord } from '../entities/finance_records';
@@ -49,10 +49,10 @@ export class FinanceRecordService {
     const record = await this.findOne(id);
     if (!record) throw new NotFoundException(`财务记录 ${id} 不存在`);
     if (record.status === '已冲正') {
-      throw new Error('该记录已冲正，不能重复冲正');
+      throw new BadRequestException('该记录已冲正，不能重复冲正');
     }
     if (!data.reason || !data.reason.trim()) {
-      throw new Error('冲正必须填写原因');
+      throw new BadRequestException('冲正必须填写原因');
     }
 
     const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
@@ -95,7 +95,8 @@ export class FinanceRecordService {
    * GET /api/finance-records/summary
    */
   async summary() {
-    const records = await this.repo.find({ order: { id: 'DESC' } });
+    // WARNING: Production risk — loading all records without limit. Consider date-range filtering.
+    const records = await this.repo.find({ order: { id: 'DESC' }, take: 5000 });
     const totalReceivable = records.filter(r => r.type === '应收').reduce((s, r) => s + (r.amount || 0), 0);
     const totalPayable = records.filter(r => r.type === '应付').reduce((s, r) => s + (r.amount || 0), 0);
     const totalIncome = records.filter(r => r.type === '收入').reduce((s, r) => s + (r.amount || 0), 0);

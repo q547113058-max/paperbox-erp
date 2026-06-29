@@ -1,13 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WorkshopInventory } from '../entities/workshop_inventory';
+import { WorkshopInventoryLog } from '../entities/workshop_inventory_logs';
 
 @Injectable()
 export class WorkshopInventoryService {
   constructor(
     @InjectRepository(WorkshopInventory)
     private readonly repo: Repository<WorkshopInventory>,
+    @InjectRepository(WorkshopInventoryLog)
+    private readonly logRepo: Repository<WorkshopInventoryLog>,
   ) {}
 
   findAll() { return this.repo.find({ order: { id: 'DESC' } }); }
@@ -59,7 +62,7 @@ export class WorkshopInventoryService {
   async issue(data: { material_name: string; material_spec?: string; quantity: number; work_order_id?: number; remark?: string }) {
     const { material_name, material_spec, quantity, work_order_id, remark } = data;
     if (!material_name || !quantity || quantity <= 0) {
-      throw new Error('物料名和数量（>0）不能为空');
+      throw new BadRequestException('物料名和数量（>0）不能为空');
     }
 
     // 查找可用库存
@@ -70,7 +73,7 @@ export class WorkshopInventoryService {
 
     const totalAvailable = items.reduce((sum, i) => sum + (i.quantity || 0), 0);
     if (totalAvailable < quantity) {
-      throw new Error(`库存不足：需要 ${quantity}，可用 ${totalAvailable}`);
+      throw new BadRequestException(`库存不足：需要 ${quantity}，可用 ${totalAvailable}`);
     }
 
     // 先进先出扣减
@@ -88,8 +91,7 @@ export class WorkshopInventoryService {
 
     // 写发料日志
     const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
-    const logRepo = this.repo.manager.getRepository('workshop_inventory_logs');
-    await logRepo.save(logRepo.create({
+    await this.logRepo.save(this.logRepo.create({
       material_name,
       material_spec: material_spec || '',
       type: '出库',

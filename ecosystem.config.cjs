@@ -19,12 +19,13 @@ const ROOT = __dirname;
 
 module.exports = {
   apps: [
-    // ============== 后端 API ==============
+    // ============== 后端 API (NestJS 服务静态前端) ==============
     {
       name: 'paperbox-server',
-      script: path.join(ROOT, 'apps/server/dist/main.js'),
-      cwd: ROOT,
-      interpreter: 'node',
+      script: 'node_modules/.bin/ts-node-dev',
+      args: '--transpile-only --respawn src/main.ts',
+      cwd: path.join(ROOT, 'apps/server'),
+      interpreter: 'none',
       instances: 1,
       exec_mode: 'fork',
       autorestart: true,
@@ -35,32 +36,11 @@ module.exports = {
       wait_ready: false,
       env: {
         NODE_ENV: 'production',
-        PORT: 3333,
+        PORT: '3005',
         JWT_SECRET: process.env.JWT_SECRET || 'paperbox-erp-v2-jwt-secret-change-in-production',
       },
       error_file: path.join(ROOT, 'logs/server-error.log'),
       out_file: path.join(ROOT, 'logs/server-out.log'),
-      merge_logs: true,
-      time: true,
-    },
-
-    // ============== 前端预览 (生产) ==============
-    {
-      name: 'paperbox-web',
-      script: 'npm',
-      args: 'run preview -- --port 4173 --host 0.0.0.0',
-      cwd: path.join(ROOT, 'apps/web'),
-      interpreter: 'none',
-      instances: 1,
-      autorestart: true,
-      max_restarts: 5,
-      min_uptime: '15s',
-      max_memory_restart: '256M',
-      env: {
-        NODE_ENV: 'production',
-      },
-      error_file: path.join(ROOT, 'logs/web-error.log'),
-      out_file: path.join(ROOT, 'logs/web-out.log'),
       merge_logs: true,
       time: true,
     },
