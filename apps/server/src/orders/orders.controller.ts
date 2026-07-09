@@ -14,6 +14,12 @@ export class OrdersController {
     return this.service.findAll();
   }
 
+  /** 返回订单明细列表（平铺，含订单/客户/产品信息） */
+  @Get('items')
+  findAllItems() {
+    return this.service.findAllItems();
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findOne(id);

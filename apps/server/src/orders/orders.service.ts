@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Order } from '../entities/orders';
 import { OrderItem } from '../entities/order_items';
 import { Customer } from '../entities/customers';
+import { Product } from '../entities/products';
 
 @Injectable()
 export class OrdersService {
@@ -14,11 +15,51 @@ export class OrdersService {
     private readonly itemRepo: Repository<OrderItem>,
     @InjectRepository(Customer)
     private readonly customerRepo: Repository<Customer>,
+    @InjectRepository(Product)
+    private readonly productRepo: Repository<Product>,
   ) {}
 
   findAll() {
     return this.orderRepo.find({
       order: { created_at: 'DESC' },
+    });
+  }
+
+  /** 返回所有订单明细（平铺），附带订单、客户、产品信息 */
+  async findAllItems() {
+    const [items, orders, customers, products] = await Promise.all([
+      this.itemRepo.find({ order: { order_id: 'ASC', id: 'ASC' } }),
+      this.orderRepo.find(),
+      this.customerRepo.find(),
+      this.productRepo.find(),
+    ]);
+
+    const orderMap = new Map(orders.map(o => [o.id, o]));
+    const customerMap = new Map(customers.map(c => [c.id, c]));
+    const productMap = new Map(products.map(p => [p.id, p]));
+
+    return items.map(item => {
+      const order = orderMap.get(item.order_id);
+      const customer = order ? customerMap.get(order.customer_id) : undefined;
+      const product = productMap.get(item.product_id);
+      return {
+        id: item.id,
+        order_id: item.order_id,
+        order_no: order?.order_no || '',
+        order_date: item.order_date || order?.order_date || '',
+        customer_id: order?.customer_id ?? null,
+        customer_name: customer?.name || '',
+        product_id: item.product_id,
+        product_name: product?.name || '',
+        product_spec: product?.spec || '',
+        quantity: item.quantity ?? 0,
+        delivered_qty: item.delivered_qty ?? 0,
+        undelivered_qty: (item.quantity ?? 0) - (item.delivered_qty ?? 0),
+        unit_price: item.unit_price ?? 0,
+        amount: item.amount ?? 0,
+        delivery_date: item.delivery_date || '',
+        remark: item.remark || '',
+      };
     });
   }
 
